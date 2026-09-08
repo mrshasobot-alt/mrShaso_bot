@@ -833,7 +833,7 @@ def create_application(settings: Settings) -> Application:
         if data == "menu:chat":
             context.user_data[MENU_MODE_KEY] = "chat"
             await query.answer()
-            await query.edit_message_text(f"{labels['chat']}\n\n{labels['choose']}", reply_markup=InlineKeyboardMarkup([build_back_button(language)]))
+            await query.edit_message_text("بەخێربێی بەڕێزم چۆن دەتوانم هاوکاریت بکەم ؟☺️", reply_markup=InlineKeyboardMarkup([build_back_button(language)]))
             return
         if data == "menu:converter":
             context.user_data[MENU_MODE_KEY] = "converter"
