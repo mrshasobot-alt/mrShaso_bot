@@ -99,6 +99,45 @@ def build_response_instruction(text: str, selected_language: str | None = None) 
     return build_selected_language_instruction(language)
 
 
+IDENTITY_RESPONSE = (
+    "ناوم\n"
+    "🦋𝄟⃝ ᴠͥɪͣᴘͫ ᴍʀꜱʜᴀsᴏ\n"
+    "@mrShaso\n"
+    "تەمەنم 36 ساڵە خەڵکی کوردستانم"
+)
+
+
+def is_identity_question(text: str) -> bool:
+    normalized = normalize_text(text)
+    if not normalized:
+        return False
+
+    identity_phrases = {
+        "ناوت چیە", "ناوت چیه", "ناوی تۆ چیە", "ناوی تۆ چیه",
+        "خۆت بناسێنە", "خۆت بناسێنه", "تۆ کێیت", "تۆ کێی",
+        "ناوت چیه و خۆت بناسێنە", "بنەڕەتت چیە", "بنەڕەتت چیه",
+        "اسمت چیه", "اسم شما چیست", "خودت را معرفی کن", "معرفی کن",
+        "اصلت چیه", "اصل من کجایی", "اصل شما کجاست", "اهل کجایی", "کی هستی",
+        "ما اسمك", "ما اسمك؟", "من أنت", "عرف نفسك", "من انت",
+        "اسمك ايه", "من اين انت",
+        "adın ne", "adin ne", "sen kimsin", "kendini tanıt",
+        "kendini tanit", "nerelisin",
+        "what is your name", "what's your name", "who are you",
+        "introduce yourself", "tell me about yourself", "where are you from",
+    }
+    if normalized in identity_phrases:
+        return True
+
+    identity_markers = (
+        "ناوت چی", "ناوت چیه", "خۆت بناسێن", "تۆ کێ",
+        "اسمت چ", "معرفی کن", "اصلت چ", "اصل من", "اصل شما", "من أنت", "من انت",
+        "ما اسمك", "عرف نفسك", "adın ne", "adin ne", "sen kimsin",
+        "what is your name", "what's your name", "who are you",
+        "introduce yourself",
+    )
+    return any(marker in normalized for marker in identity_markers)
+
+
 def normalize_text(value: str) -> str:
     if not value:
         return ""
@@ -488,6 +527,10 @@ def create_application(settings: Settings) -> Application:
             return
 
         question = " ".join(context.args)
+        if is_identity_question(question):
+            await update.message.reply_text(IDENTITY_RESPONSE)
+            return
+
         await update.message.reply_text("Thinking...")
         selected_language = context.user_data.get(SELECTED_LANGUAGE_KEY)
         system_instruction = build_response_instruction(question, selected_language)
@@ -762,6 +805,10 @@ def create_application(settings: Settings) -> Application:
                     await update.message.reply_text("⚠️ Failed to apply that moderation command.")
                 return
 
+            if is_identity_question(text):
+                await update.message.reply_text(IDENTITY_RESPONSE)
+                return
+
             if reply_target and is_reply_to_bot_message(reply_target, context.bot.id):
                 chat_history = context.chat_data.setdefault("history", [])
                 chat_history.append({"role": "user", "content": text})
@@ -793,6 +840,10 @@ def create_application(settings: Settings) -> Application:
             if query:
                 await send_song_preview(update, query)
                 return
+
+        if is_identity_question(text):
+            await update.message.reply_text(IDENTITY_RESPONSE)
+            return
 
         greeting_language = detect_greeting_language(text)
         if greeting_language:
