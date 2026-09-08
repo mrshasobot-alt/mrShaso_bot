@@ -11,6 +11,9 @@ from app.gemini_client import GeminiClient
 
 logger = logging.getLogger(__name__)
 
+BOT_PROFILE_NAME = "🦋𝄟⃝ ᴠͥɪͣᴘͫ Ｓｈａ"
+START_MESSAGE_DELETE_DELAY = 5
+
 
 def normalize_text(value: str) -> str:
     if not value:
@@ -293,6 +296,25 @@ def permissions_for_lock(action: str) -> ChatPermissions:
     return permissions_for_locks({action})
 
 
+def is_private_chat(update: Update) -> bool:
+    chat = update.effective_chat
+    return chat is not None and chat.type == "private"
+
+
+async def delete_start_response(context: ContextTypes.DEFAULT_TYPE) -> None:
+    job = context.job
+    if job is None or not isinstance(job.data, dict):
+        return
+
+    try:
+        await context.bot.delete_message(
+            chat_id=job.data["chat_id"],
+            message_id=job.data["message_id"],
+        )
+    except Exception:
+        logger.debug("Could not delete start response", exc_info=True)
+
+
 async def is_admin_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
     if not update.effective_chat or not update.effective_user:
         return False
@@ -325,10 +347,19 @@ def create_application(settings: Settings) -> Application:
                 logger.debug("Could not send error response: %s", reply_error, exc_info=True)
 
     async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        if not is_private_chat(update) or update.message is None:
+            return
+
         user = update.effective_user
         first_name = user.first_name if user and user.first_name else "friend"
-        text = f"Hello {first_name}!"
-        await update.message.reply_text(text)
+        text = f"Hello {first_name}!\n{BOT_PROFILE_NAME}"
+        response = await update.message.reply_text(text)
+        if context.job_queue is not None:
+            context.job_queue.run_once(
+                delete_start_response,
+                START_MESSAGE_DELETE_DELAY,
+                data={"chat_id": response.chat_id, "message_id": response.message_id},
+            )
 
     async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if update.message is not None:
@@ -379,6 +410,42 @@ def create_application(settings: Settings) -> Application:
         if message.message_id not in tracked_message_ids:
             tracked_message_ids.append(message.message_id)
             del tracked_message_ids[:-500]
+
+    async def handle_group_member_update(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        message = update.effective_message
+        chat = update.effective_chat
+        if not message or not chat or chat.type not in {"group", "supergroup"}:
+            return
+
+        try:
+            bot_member = await context.bot.get_chat_member(chat.id, context.bot.id)
+        except Exception:
+            logger.warning("Could not verify bot permissions in chat %s", chat.id, exc_info=True)
+            return
+
+        if bot_member.status not in {"administrator", "creator"} or (
+            bot_member.status == "administrator"
+            and not bot_member.can_delete_messages
+        ):
+            logger.warning("Bot needs Delete Messages permission in chat %s", chat.id)
+            return
+
+        try:
+            await context.bot.delete_message(chat_id=chat.id, message_id=message.message_id)
+        except Exception:
+            logger.warning(
+                "Could not delete group member service message in chat %s",
+                chat.id,
+                exc_info=True,
+            )
+            return
+
+        for member in message.new_chat_members or []:
+            member_name = f"@{member.username}" if member.username else member.first_name
+            await context.bot.send_message(
+                chat_id=chat.id,
+                text=f"🌟 بەخێربێیت {member_name}! خۆشحاڵین بە هاتنت بۆ گرووپەکەمان. 🌟",
+            )
 
     async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if update is None or context is None:
@@ -526,11 +593,6 @@ def create_application(settings: Settings) -> Application:
                 await update.message.reply_text(answer)
                 return
 
-            greeting_language = detect_greeting_language(text)
-            if greeting_language:
-                await update.message.reply_text(greeting_response(greeting_language))
-                return
-
             return
 
         greeting_language = detect_greeting_language(text)
@@ -562,6 +624,13 @@ def create_application(settings: Settings) -> Application:
     application.add_handler(CommandHandler("status", status))
     application.add_handler(CommandHandler("language", language_info))
     application.add_handler(CommandHandler("clear", clear_context))
+    application.add_handler(
+        MessageHandler(
+            filters.StatusUpdate.NEW_CHAT_MEMBERS | filters.StatusUpdate.LEFT_CHAT_MEMBER,
+            handle_group_member_update,
+        ),
+        group=-2,
+    )
     application.add_handler(MessageHandler(filters.ALL, track_group_message), group=-1)
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
