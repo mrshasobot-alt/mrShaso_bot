@@ -18,7 +18,6 @@ class Settings:
     api_hash: Optional[str] = None
     gemini_api_key: Optional[str] = None
     gemini_model: str = "gemini-2.5-flash"
-    archive_chat_id: Optional[int] = None
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -28,7 +27,6 @@ class Settings:
             api_hash=os.getenv("TELEGRAM_API_HASH", "").strip() or None,
             gemini_api_key=os.getenv("GEMINI_API_KEY", "").strip() or None,
             gemini_model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash").strip() or "gemini-2.5-flash",
-            archive_chat_id=_as_int(os.getenv("ARCHIVE_CHAT_ID")),
         )
 
     def validate(self) -> None:

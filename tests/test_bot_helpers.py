@@ -2,6 +2,7 @@ import unittest
 from types import SimpleNamespace
 
 from app.bot import (
+    SUPPORTED_CONVERSION_OPERATIONS,
     build_main_menu,
     extract_media_url,
     identity_response,
@@ -40,9 +41,17 @@ class GeminiClientTests(unittest.TestCase):
             "menu:converter:mp3_voice", "menu:converter:voice_mp3",
             "menu:converter:video_mp3", "menu:converter:video_voice",
             "menu:media:facebook", "menu:media:tiktok",
-            "menu:media:instagram", "menu:media:snapchat",
-            "menu:media:upload", "menu:files:archive", "menu:main",
+            "menu:media:instagram", "menu:media:snapchat", "menu:media:upload",
+            "menu:main",
         }.issubset(callbacks))
+        self.assertNotIn("menu:files:archive", callbacks)
+        self.assertIn("menu:media:upload", callbacks)
+
+    def test_converter_operations_are_explicitly_supported(self):
+        self.assertEqual(
+            SUPPORTED_CONVERSION_OPERATIONS,
+            {"mp3_voice", "voice_mp3", "video_mp3", "video_voice"},
+        )
 
     def test_identity_keywords_cover_requested_languages(self):
         for question in ["اصل بده", "ناسنامە", "عرفني", "who are you", "adın ne"]:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import importlib
 import logging
 import mimetypes
 import os
@@ -28,7 +29,10 @@ from app.gemini_client import GeminiClient
 logger = logging.getLogger(__name__)
 
 MEDIA_URL_PATTERN = re.compile(r"https?://[^\s<>]+", re.IGNORECASE)
-ARCHIVE_DIRECTORY = Path("media_archive")
+SOCIAL_MEDIA_DIRECTORY = Path("social_media_files")
+SUPPORTED_CONVERSION_OPERATIONS = frozenset({
+    "mp3_voice", "voice_mp3", "video_mp3", "video_voice",
+})
 
 BOT_PROFILE_NAME = "🦋𝄟⃝ ᴠͥɪͣᴘͫ Ｓｈａ"
 START_MESSAGE_DELETE_DELAY = 30
@@ -44,11 +48,11 @@ LANGUAGE_OPTIONS = (
 )
 
 MENU_TEXT = {
-    "kurdish": {"title": "🦋 مینیوی سەرەکی MrShaso", "language": "🌐 زمان", "chat": "💬 چات / گفتوگۆ", "converter": "🛠️ کۆنفێرتەر", "media": "داگرتنی لێنکی میدیا", "files": "📁 فایلەکان", "refresh": "🔄 نوێکردنەوەی menu", "back": "🔙 گەڕانەوە بۆ پەڕەی سەرەکی", "choose": "تکایە بەشێک هەڵبژێرە:", "language_chosen": "زمان هەڵبژێردرا: کوردی"},
-    "persian": {"title": "🦋 منوی اصلی MrShaso", "language": "🌐 زبان", "chat": "💬 گفتگو", "converter": "🛠️ تبدیل‌کننده", "media": "دانلود لینک رسانه", "files": "📁 فایل‌ها", "refresh": "🔄 تازه‌سازی منو", "back": "🔙 بازگشت به منوی اصلی", "choose": "یک بخش را انتخاب کنید:", "language_chosen": "زبان انتخاب شد: فارسی"},
-    "arabic": {"title": "🦋 القائمة الرئيسية MrShaso", "language": "🌐 اللغة", "chat": "💬 الدردشة", "converter": "🛠️ المحوّل", "media": "تنزيل رابط الوسائط", "files": "📁 الملفات", "refresh": "🔄 تحديث القائمة", "back": "🔙 العودة إلى القائمة الرئيسية", "choose": "اختر قسمًا:", "language_chosen": "تم اختيار العربية"},
-    "english": {"title": "", "language": "🌐 Language", "chat": "💬 Chat", "converter": "🛠️ Converter", "media": "Media Link Downloader", "files": "📁 Files", "refresh": "🔄 Refresh menu", "back": "🔙 Back to Main Menu", "choose": "", "language_chosen": "Language selected: English"},
-    "turkish": {"title": "🦋 MrShaso Ana Menü", "language": "🌐 Dil", "chat": "💬 Sohbet", "converter": "🛠️ Dönüştürücü", "media": "Medya bağlantısı indirici", "files": "📁 Dosyalar", "refresh": "🔄 Menüyü yenile", "back": "🔙 Ana menüye dön", "choose": "Bir bölüm seçin:", "language_chosen": "Dil seçildi: Türkçe"},
+    "kurdish": {"title": "🦋 مینیوی سەرەکی MrShaso", "language": "🌐 زمان", "chat": "💬 چات / گفتوگۆ", "converter": "🛠️ کۆنفێرتەر", "media": "داگرتنی لێنکی میدیا", "social_files": "فایلەکانی سۆشیال میدیا", "refresh": "🔄 نوێکردنەوەی menu", "back": "🔙 گەڕانەوە بۆ پەڕەی سەرەکی", "choose": "تکایە بەشێک هەڵبژێرە:", "language_chosen": "زمان هەڵبژێردرا: کوردی"},
+    "persian": {"title": "🦋 منوی اصلی MrShaso", "language": "🌐 زبان", "chat": "💬 گفتگو", "converter": "🛠️ تبدیل‌کننده", "media": "دانلود لینک رسانه", "social_files": "فایل‌های شبکه‌های اجتماعی", "refresh": "🔄 تازه‌سازی منو", "back": "🔙 بازگشت به منوی اصلی", "choose": "یک بخش را انتخاب کنید:", "language_chosen": "زبان انتخاب شد: فارسی"},
+    "arabic": {"title": "🦋 القائمة الرئيسية MrShaso", "language": "🌐 اللغة", "chat": "💬 الدردشة", "converter": "🛠️ المحوّل", "media": "تنزيل رابط الوسائط", "social_files": "ملفات التواصل الاجتماعي", "refresh": "🔄 تحديث القائمة", "back": "🔙 العودة إلى القائمة الرئيسية", "choose": "اختر قسمًا:", "language_chosen": "تم اختيار العربية"},
+    "english": {"title": "", "language": "🌐 Language", "chat": "💬 Chat", "converter": "🛠️ Converter", "media": "Media Link Downloader", "social_files": "Social Media Files", "refresh": "🔄 Refresh menu", "back": "🔙 Back to Main Menu", "choose": "", "language_chosen": "Language selected: English"},
+    "turkish": {"title": "🦋 MrShaso Ana Menü", "language": "🌐 Dil", "chat": "💬 Sohbet", "converter": "🛠️ Dönüştürücü", "media": "Medya bağlantısı indirici", "social_files": "Sosyal medya dosyaları", "refresh": "🔄 Menüyü yenile", "back": "🔙 Ana menüye dön", "choose": "Bir bölüm seçin:", "language_chosen": "Dil seçildi: Türkçe"},
 }
 
 CHAT_WELCOME_TEXT = {
@@ -73,35 +77,35 @@ MENU_ACTION_TEXT = {
         "video_mp3": "🎬 Video → MP3", "video_voice": "📹 Video → Voice",
         "facebook": "📘 فەیسبووک", "tiktok": "🎵 تیک تۆک",
         "instagram": "📸 اینستاگرام", "snapchat": "👻 سناپ چات",
-        "social_files": "📱 فایلەکانی سۆشیال میدیا", "archive": "📁 دروستکردنی ئەرشیف",
+        "social_files": "📱 فایلەکانی سۆشیال میدیا",
     },
     "persian": {
         "mp3_voice": "🎵 MP3 → صدا", "voice_mp3": "🎙️ صدا → MP3",
         "video_mp3": "🎬 ویدیو → MP3", "video_voice": "📹 ویدیو → صدا",
         "facebook": "📘 فیسبوک", "tiktok": "🎵 تیک‌تاک",
         "instagram": "📸 اینستاگرام", "snapchat": "👻 اسنپ‌چت",
-        "social_files": "📱 فایل‌های شبکه‌های اجتماعی", "archive": "📁 ساخت آرشیو",
+        "social_files": "📱 فایل‌های شبکه‌های اجتماعی",
     },
     "arabic": {
         "mp3_voice": "🎵 MP3 ← صوت", "voice_mp3": "🎙️ صوت ← MP3",
         "video_mp3": "🎬 فيديو ← MP3", "video_voice": "📹 فيديو ← صوت",
         "facebook": "📘 فيسبوك", "tiktok": "🎵 تيك توك",
         "instagram": "📸 إنستغرام", "snapchat": "👻 سناب شات",
-        "social_files": "📱 ملفات التواصل الاجتماعي", "archive": "📁 إنشاء أرشيف",
+        "social_files": "📱 ملفات التواصل الاجتماعي",
     },
     "english": {
         "mp3_voice": "🎵 MP3 → Voice", "voice_mp3": "🎙️ Voice → MP3",
         "video_mp3": "🎬 Video → MP3", "video_voice": "📹 Video → Voice",
         "facebook": "📘 Facebook", "tiktok": "🎵 TikTok",
         "instagram": "📸 Instagram", "snapchat": "👻 Snapchat",
-        "social_files": "📱 Social media files", "archive": "📁 Create archive",
+        "social_files": "📱 Social media files",
     },
     "turkish": {
         "mp3_voice": "🎵 MP3 → Ses", "voice_mp3": "🎙️ Ses → MP3",
         "video_mp3": "🎬 Video → MP3", "video_voice": "📹 Video → Ses",
         "facebook": "📘 Facebook", "tiktok": "🎵 TikTok",
         "instagram": "📸 Instagram", "snapchat": "👻 Snapchat",
-        "social_files": "📱 Sosyal medya dosyaları", "archive": "📁 Arşiv oluştur",
+        "social_files": "📱 Sosyal medya dosyaları",
     },
 }
 
@@ -133,9 +137,8 @@ def build_main_menu(language: str = "kurdish") -> InlineKeyboardMarkup:
         build_section_header(labels["media"], "media"),
         [InlineKeyboardButton(actions["facebook"], callback_data="menu:media:facebook"), InlineKeyboardButton(actions["tiktok"], callback_data="menu:media:tiktok")],
         [InlineKeyboardButton(actions["instagram"], callback_data="menu:media:instagram"), InlineKeyboardButton(actions["snapchat"], callback_data="menu:media:snapchat")],
+        build_section_header(labels["social_files"], "social_files"),
         [InlineKeyboardButton(actions["social_files"], callback_data="menu:media:upload")],
-        build_section_header(labels["files"], "files"),
-        [InlineKeyboardButton(actions["archive"], callback_data="menu:files:archive")],
         [InlineKeyboardButton(labels["refresh"], callback_data="menu:main")],
     ])
 
@@ -165,13 +168,6 @@ def build_media_menu(language: str) -> InlineKeyboardMarkup:
         [InlineKeyboardButton("📘 فەیسبووک", callback_data="menu:media:facebook"), InlineKeyboardButton("🎵 تیک تۆک", callback_data="menu:media:tiktok")],
         [InlineKeyboardButton("📸 اینستاگرام", callback_data="menu:media:instagram"), InlineKeyboardButton("👻 سناپ چات", callback_data="menu:media:snapchat")],
         [InlineKeyboardButton("📱 فایلەکانی سۆشیال میدیا", callback_data="menu:media:upload")],
-        build_back_button(language),
-    ])
-
-
-def build_files_menu(language: str) -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup([
-        [InlineKeyboardButton("📁 دروستکردنی ئەرشیف", callback_data="menu:files:archive")],
         build_back_button(language),
     ])
 
@@ -357,7 +353,7 @@ def media_url_matches_mode(url: str, mode: str) -> bool:
 
 def _download_url_sync(url: str, workdir: str) -> Path:
     try:
-        import yt_dlp
+        yt_dlp = importlib.import_module("yt_dlp")
     except ImportError as exc:
         raise RuntimeError("yt-dlp is not installed") from exc
 
@@ -380,6 +376,8 @@ def _download_url_sync(url: str, workdir: str) -> Path:
 
 
 def _convert_media_sync(source: Path, operation: str, workdir: str) -> Path:
+    if operation not in SUPPORTED_CONVERSION_OPERATIONS:
+        raise ValueError(f"Unsupported conversion operation: {operation}")
     output_suffix = ".mp3" if operation in {"voice_mp3", "video_mp3"} else ".ogg"
     output = Path(workdir) / f"converted{output_suffix}"
     codec_args = ["-vn", "-codec:a", "libmp3lame", "-q:a", "4"] if output_suffix == ".mp3" else [
@@ -732,26 +730,15 @@ def create_application(settings: Settings) -> Application:
             except Exception as reply_error:
                 logger.debug("Could not send error response: %s", reply_error, exc_info=True)
 
-    async def archive_media(message: object, sent_message: object, source_path: Path, context: ContextTypes.DEFAULT_TYPE) -> None:
-        ARCHIVE_DIRECTORY.mkdir(parents=True, exist_ok=True)
+    async def store_social_media_file(message: object, sent_message: object, source_path: Path, context: ContextTypes.DEFAULT_TYPE) -> None:
+        SOCIAL_MEDIA_DIRECTORY.mkdir(parents=True, exist_ok=True)
         chat_id = getattr(getattr(message, "chat", None), "id", "unknown")
         message_id = getattr(sent_message, "message_id", "unknown")
-        archive_path = ARCHIVE_DIRECTORY / f"{chat_id}_{message_id}{source_path.suffix}"
+        library_path = SOCIAL_MEDIA_DIRECTORY / f"{chat_id}_{message_id}{source_path.suffix}"
         try:
-            shutil.copy2(source_path, archive_path)
+            shutil.copy2(source_path, library_path)
         except OSError:
-            logger.warning("Could not save local media archive", exc_info=True)
-
-        if settings.archive_chat_id is None or not sent_message:
-            return
-        try:
-            await context.bot.copy_message(
-                chat_id=settings.archive_chat_id,
-                from_chat_id=getattr(getattr(sent_message, "chat", None), "id", chat_id),
-                message_id=message_id,
-            )
-        except Exception:
-            logger.warning("Could not copy media to archive chat", exc_info=True)
+            logger.warning("Could not save local social media file", exc_info=True)
 
     async def send_media_file(message: object, context: ContextTypes.DEFAULT_TYPE, path: Path, operation: str | None = None) -> object:
         suffix = path.suffix.lower()
@@ -763,7 +750,7 @@ def create_application(settings: Settings) -> Application:
             sent = await message.reply_video(video=str(path), supports_streaming=True)
         else:
             raise RuntimeError("Unsupported media type")
-        await archive_media(message, sent, path, context)
+        await store_social_media_file(message, sent, path, context)
         return sent
 
     async def download_telegram_media(message: object, context: ContextTypes.DEFAULT_TYPE, workdir: str) -> Path:
@@ -803,15 +790,15 @@ def create_application(settings: Settings) -> Application:
         if message is None:
             return
         mode = context.user_data.get(MENU_MODE_KEY, "main")
-        if mode not in {"files:archive", "media:upload", "converter:mp3_voice", "converter:voice_mp3", "converter:video_mp3", "converter:video_voice"}:
+        if mode not in {"media:upload", "converter:mp3_voice", "converter:voice_mp3", "converter:video_mp3", "converter:video_voice"}:
             return
 
         try:
             with tempfile.TemporaryDirectory(prefix="mrshaso_media_") as workdir:
                 source = await download_telegram_media(message, context, workdir)
-                if mode == "files:archive" or mode == "media:upload":
-                    await archive_media(message, message, source, context)
-                    await message.reply_text("✅ فایلەکە بە سەرکەوتوویی خراوەتە ناو ئەرشیفی media.")
+                if mode == "media:upload":
+                    await store_social_media_file(message, message, source, context)
+                    await message.reply_text("✅ فایلەکە بە سەرکەوتوویی خراوەتە ناو Social Media Files.")
                     return
                 converted = await asyncio.to_thread(_convert_media_sync, source, mode.removeprefix("converter:"), workdir)
                 await send_media_file(message, context, converted, mode.removeprefix("converter:"))
@@ -866,11 +853,6 @@ def create_application(settings: Settings) -> Application:
             await query.answer()
             await query.edit_message_text(f"{labels['media']}\n\n{labels['choose']}", reply_markup=build_media_menu(language))
             return
-        if data == "menu:files":
-            context.user_data[MENU_MODE_KEY] = "files"
-            await query.answer()
-            await query.edit_message_text(f"{labels['files']}\n\n{labels['choose']}", reply_markup=build_files_menu(language))
-            return
         if data.startswith("menu:converter:"):
             context.user_data[MENU_MODE_KEY] = data.removeprefix("menu:")
             await query.answer()
@@ -880,11 +862,6 @@ def create_application(settings: Settings) -> Application:
             context.user_data[MENU_MODE_KEY] = data.removeprefix("menu:")
             await query.answer()
             await query.edit_message_text("🔗 تکایە لینکی میدیا بنێرە، یان فایلەکە ڕاستەوخۆ upload بکە.", reply_markup=InlineKeyboardMarkup([build_back_button(language)]))
-            return
-        if data == "menu:files:archive":
-            context.user_data[MENU_MODE_KEY] = "files:archive"
-            await query.answer()
-            await query.edit_message_text("📁 فایلەکانت بنێرە بۆ دروستکردنی ئەرشیفی گەلەری.", reply_markup=InlineKeyboardMarkup([build_back_button(language)]))
             return
         await query.answer()
 
