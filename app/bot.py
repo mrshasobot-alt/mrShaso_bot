@@ -24,7 +24,6 @@ from telegram.ext import (
 
 from app.config import Settings
 from app.gemini_client import GeminiClient
-from app.music import find_track_preview
 
 logger = logging.getLogger(__name__)
 
@@ -545,20 +544,6 @@ def is_clear_chat_command(text: str) -> bool:
     return parse_clear_chat_count(text) is not None
 
 
-def extract_song_query(text: str) -> str | None:
-    normalized = text.strip()
-    match = re.match(r"^/(?:song|music|گۆرانی|آهنگ)(?:@\w+)?\s+(.+)$", normalized, re.IGNORECASE)
-    return match.group(1).strip() if match else None
-
-
-def looks_like_song_request(text: str) -> bool:
-    normalized = normalize_text(text)
-    prefixes = {
-        "play", "song", "music", "گۆرانی", "گۆرانیی", "ئاهەنگ", "آهنگ",
-        "اغنية", "أغنية", "موسیقی", "موزیک",
-    }
-    return any(normalized.startswith(f"{prefix} ") for prefix in prefixes)
-
 def is_command_guide_request(text: str) -> bool:
     normalized = normalize_text(text)
     return normalized in {
@@ -575,7 +560,6 @@ def build_command_guide() -> str:
         "• /start - دەستپێکردن\n"
         "• /help - پیشاندانی ئەم ڕێنماییە\n"
         "• /ask <پرسیار> - پرسیارکردن لە Gemini\n"
-        "• /song <ناوی گۆرانی یان هونەرمەند> - ناردنی preview ـی یاساییی گۆرانی\n"
         "• /status - دۆخی بۆت\n"
         "• /language - زمانە پشتگیریکراوەکان\n"
         "• /clear - پاککردنەوەی context ـی گفتوگۆ\n\n"
@@ -940,41 +924,6 @@ def create_application(settings: Settings) -> Application:
         answer = gemini.ask(question, system_instruction=system_instruction)
         await update.message.reply_text(answer)
 
-    async def send_song_preview(update: Update, query: str) -> None:
-        if update is None or update.message is None:
-            return
-
-        await update.message.reply_text("Searching for a licensed preview...")
-        try:
-            track = await find_track_preview(query)
-        except Exception:
-            logger.exception("Music preview search failed for %r", query)
-            await update.message.reply_text("I could not search for that song right now.")
-            return
-
-        if track is None:
-            await update.message.reply_text("No licensed preview was found for that request.")
-            return
-
-        try:
-            await update.message.reply_audio(
-                audio=track.preview_url,
-                title=track.title,
-                performer=track.artist,
-                caption=f"{track.title} - {track.artist}\nLicensed preview",
-            )
-        except Exception:
-            logger.exception("Music preview delivery failed for %r", query)
-            await update.message.reply_text("The preview was found, but Telegram could not deliver it.")
-
-    async def song_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-        query = " ".join(context.args).strip() if context and context.args else ""
-        if not query:
-            if update and update.message:
-                await update.message.reply_text("Usage: /song <artist or song title>")
-            return
-        await send_song_preview(update, query)
-
     async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text(
             "✅ Bot is online\n"
@@ -1088,6 +1037,8 @@ def create_application(settings: Settings) -> Application:
 
         chat = update.effective_chat
         is_group_chat = chat is not None and chat.type in {"group", "supergroup"}
+        if is_group_chat and not await is_admin_user(update, context):
+            return
         mode = context.user_data.get(MENU_MODE_KEY, "main")
         url = extract_media_url(text)
         if not is_group_chat and url and mode.startswith("media:") and not media_url_matches_mode(url, mode):
@@ -1252,17 +1203,6 @@ def create_application(settings: Settings) -> Application:
 
             return
 
-        if looks_like_song_request(text):
-            query = re.sub(
-                r"^(?:play|song|music|گۆرانی|گۆرانیی|ئاهەنگ|آهنگ|اغنية|أغنية|موسیقی|موزیک)\s+",
-                "",
-                text,
-                flags=re.IGNORECASE,
-            ).strip()
-            if query:
-                await send_song_preview(update, query)
-                return
-
         if should_answer_identity(update, context.bot.id):
             await update.message.reply_text(identity_response(text))
             return
@@ -1293,7 +1233,6 @@ def create_application(settings: Settings) -> Application:
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("ask", ask_command))
-    application.add_handler(CommandHandler("song", song_command))
     application.add_handler(CommandHandler("status", status))
     application.add_handler(CommandHandler("language", language_info))
     application.add_handler(CommandHandler("clear", clear_context))
