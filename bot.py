@@ -11,7 +11,7 @@ from app.gemini_client import GeminiClient
 
 logger = logging.getLogger(__name__)
 
-BOT_PROFILE_NAME = "🦋𝄟⃝ ᴠͥɪͣᴘͫ Ｓｈａ"
+BOT_PROFILE_NAME = "🦋𝄟⃝ ᴠ‌ɪ‌ᴘ‌ Ｓｈａ"
 START_MESSAGE_DELETE_DELAY = 5
 
 
@@ -350,10 +350,7 @@ def create_application(settings: Settings) -> Application:
         if not is_private_chat(update) or update.message is None:
             return
 
-        user = update.effective_user
-        first_name = user.first_name if user and user.first_name else "friend"
-        text = f"Hello {first_name}!\n{BOT_PROFILE_NAME}"
-        response = await update.message.reply_text(text)
+        response = await update.message.reply_text(BOT_PROFILE_NAME)
         if context.job_queue is not None:
             context.job_queue.run_once(
                 delete_start_response,
