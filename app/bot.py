@@ -60,6 +60,14 @@ CHAT_WELCOME_TEXT = {
     "turkish": "Hoş geldin, nasıl yardımcı olabilirim? ☺️",
 }
 
+PRIVATE_CHAT_HEADER_TEXT = {
+    "kurdish": "💬 چاتی تایبەت",
+    "persian": "💬 گفتگوی خصوصی",
+    "arabic": "💬 الدردشة الخاصة",
+    "english": "💬 Private Chat",
+    "turkish": "💬 Özel Sohbet",
+}
+
 MENU_ACTION_TEXT = {
     "kurdish": {
         "mp3_voice": "🎵 MP3 → Voice", "voice_mp3": "🎙️ Voice → MP3",
@@ -119,7 +127,7 @@ def build_main_menu(language: str = "kurdish") -> InlineKeyboardMarkup:
         build_section_header(labels["language"], "language"),
         language_buttons[:3],
         language_buttons[3:],
-        [InlineKeyboardButton("─── 💬 چاتی تایبەت ───", callback_data="menu:chat")],
+        [InlineKeyboardButton(f"─── {PRIVATE_CHAT_HEADER_TEXT[_menu_language(language)]} ───", callback_data="menu:chat")],
         build_section_header(labels["converter"], "converter"),
         [InlineKeyboardButton(actions["mp3_voice"], callback_data="menu:converter:mp3_voice"), InlineKeyboardButton(actions["voice_mp3"], callback_data="menu:converter:voice_mp3")],
         [InlineKeyboardButton(actions["video_mp3"], callback_data="menu:converter:video_mp3"), InlineKeyboardButton(actions["video_voice"], callback_data="menu:converter:video_voice")],
