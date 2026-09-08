@@ -886,8 +886,6 @@ def create_application(settings: Settings) -> Application:
         if data == "menu:media:upload":
             context.user_data[MENU_MODE_KEY] = "media:upload"
             await query.answer()
-            if query.message is not None:
-                await send_social_media_gallery(query.message.chat_id, context)
             return
         if data.startswith("menu:converter:"):
             context.user_data[MENU_MODE_KEY] = data.removeprefix("menu:")
