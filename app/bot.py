@@ -51,11 +51,11 @@ LANGUAGE_OPTIONS = (
 )
 
 MENU_TEXT = {
-    "kurdish": {"title": "🦋 مینیوی سەرەکی MrShaso", "language": "🌐 زمان", "chat": "💬 چات / گفتوگۆ", "converter": "🛠️ کۆنفێرتەر", "media": "داگرتنی لێنکی میدیا", "social_files": "فایلەکانی سۆشیال میدیا", "refresh": "🔄 نوێکردنەوەی menu", "back": "🔙 گەڕانەوە بۆ پەڕەی سەرەکی", "choose": "تکایە بەشێک هەڵبژێرە:", "language_chosen": "زمان هەڵبژێردرا: کوردی"},
-    "persian": {"title": "🦋 منوی اصلی MrShaso", "language": "🌐 زبان", "chat": "💬 گفتگو", "converter": "🛠️ تبدیل‌کننده", "media": "دانلود لینک رسانه", "social_files": "فایل‌های شبکه‌های اجتماعی", "refresh": "🔄 تازه‌سازی منو", "back": "🔙 بازگشت به منوی اصلی", "choose": "یک بخش را انتخاب کنید:", "language_chosen": "زبان انتخاب شد: فارسی"},
-    "arabic": {"title": "🦋 القائمة الرئيسية MrShaso", "language": "🌐 اللغة", "chat": "💬 الدردشة", "converter": "🛠️ المحوّل", "media": "تنزيل رابط الوسائط", "social_files": "ملفات التواصل الاجتماعي", "refresh": "🔄 تحديث القائمة", "back": "🔙 العودة إلى القائمة الرئيسية", "choose": "اختر قسمًا:", "language_chosen": "تم اختيار العربية"},
-    "english": {"title": "", "language": "🌐 Language", "chat": "💬 Chat", "converter": "🛠️ Converter", "media": "Media Link Downloader", "social_files": "Social Media Files", "refresh": "🔄 Refresh menu", "back": "🔙 Back to Main Menu", "choose": "", "language_chosen": "Language selected: English"},
-    "turkish": {"title": "🦋 MrShaso Ana Menü", "language": "🌐 Dil", "chat": "💬 Sohbet", "converter": "🛠️ Dönüştürücü", "media": "Medya bağlantısı indirici", "social_files": "Sosyal medya dosyaları", "refresh": "🔄 Menüyü yenile", "back": "🔙 Ana menüye dön", "choose": "Bir bölüm seçin:", "language_chosen": "Dil seçildi: Türkçe"},
+    "kurdish": {"title": "🦋 مینیوی سەرەکی MrShaso", "language": "🌐 زمان", "chat": "💬 چات / گفتوگۆ", "converter": "🛠️ کۆنفێرتەر", "media": "داگرتنی لێنکی میدیا", "social_files": "فایلەکانی سۆشیال میدیا", "refresh": "🔄 نوێکردنەوەی menu", "back": "🔙 گەڕانەوە بۆ پەڕەی سەرەکی", "choose": "تکایە بەشێک هەڵبژێرە:", "language_chosen": "زمان هەڵبژێردرا: کوردی", "converter_prompt": "📥 تکایە فایلەکە بنێرە بۆ دەستپێکردنی گۆڕین.", "media_prompt": "🔗 تکایە لینکی میدیا بنێرە یان فایلەکە ڕاستەوخۆ upload بکە."},
+    "persian": {"title": "🦋 منوی اصلی MrShaso", "language": "🌐 زبان", "chat": "💬 گفتگو", "converter": "🛠️ تبدیل‌کننده", "media": "دانلود لینک رسانه", "social_files": "فایل‌های شبکه‌های اجتماعی", "refresh": "🔄 تازه‌سازی منو", "back": "🔙 بازگشت به منوی اصلی", "choose": "یک بخش را انتخاب کنید:", "language_chosen": "زبان انتخاب شد: فارسی", "converter_prompt": "📥 لطفاً فایل را برای تبدیل ارسال کنید.", "media_prompt": "🔗 لطفاً لینک رسانه یا فایل را ارسال کنید."},
+    "arabic": {"title": "🦋 القائمة الرئيسية MrShaso", "language": "🌐 اللغة", "chat": "💬 الدردشة", "converter": "🛠️ المحوّل", "media": "تنزيل رابط الوسائط", "social_files": "ملفات التواصل الاجتماعي", "refresh": "🔄 تحديث القائمة", "back": "🔙 العودة إلى القائمة الرئيسية", "choose": "اختر قسمًا:", "language_chosen": "تم اختيار العربية", "converter_prompt": "📥 أرسل الملف لبدء التحويل.", "media_prompt": "🔗 أرسل رابط الوسائط أو الملف مباشرة."},
+    "english": {"title": "", "language": "🌐 Language", "chat": "💬 Chat", "converter": "🛠️ Converter", "media": "Media Link Downloader", "social_files": "Social Media Files", "refresh": "🔄 Refresh menu", "back": "🔙 Back to Main Menu", "choose": "", "language_chosen": "Language selected: English", "converter_prompt": "📥 Send a file to start conversion.", "media_prompt": "🔗 Send a media link or upload a file."},
+    "turkish": {"title": "🦋 MrShaso Ana Menü", "language": "🌐 Dil", "chat": "💬 Sohbet", "converter": "🛠️ Dönüştürücü", "media": "Medya bağlantısı indirici", "social_files": "Sosyal medya dosyaları", "refresh": "🔄 Menüyü yenile", "back": "🔙 Ana menüye dön", "choose": "Bir bölüm seçin:", "language_chosen": "Dil seçildi: Türkçe", "converter_prompt": "📥 Dönüştürmek için bir dosya gönderin.", "media_prompt": "🔗 Bir medya bağlantısı veya dosya gönderin."},
 }
 
 CHAT_WELCOME_TEXT = {
@@ -156,20 +156,22 @@ def build_language_menu(language: str = "kurdish") -> InlineKeyboardMarkup:
 
 
 def build_converter_menu(language: str) -> InlineKeyboardMarkup:
+    actions = MENU_ACTION_TEXT[_menu_language(language)]
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("🎵 MP3 → Voice", callback_data="menu:converter:mp3_voice")],
-        [InlineKeyboardButton("🎙️ Voice → MP3", callback_data="menu:converter:voice_mp3")],
-        [InlineKeyboardButton("🎬 Video → MP3", callback_data="menu:converter:video_mp3")],
-        [InlineKeyboardButton("📹 Video → Voice", callback_data="menu:converter:video_voice")],
+        [InlineKeyboardButton(actions["mp3_voice"], callback_data="menu:converter:mp3_voice")],
+        [InlineKeyboardButton(actions["voice_mp3"], callback_data="menu:converter:voice_mp3")],
+        [InlineKeyboardButton(actions["video_mp3"], callback_data="menu:converter:video_mp3")],
+        [InlineKeyboardButton(actions["video_voice"], callback_data="menu:converter:video_voice")],
         build_back_button(language),
     ])
 
 
 def build_media_menu(language: str) -> InlineKeyboardMarkup:
+    actions = MENU_ACTION_TEXT[_menu_language(language)]
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("📘 فەیسبووک", callback_data="menu:media:facebook"), InlineKeyboardButton("🎵 تیک تۆک", callback_data="menu:media:tiktok")],
-        [InlineKeyboardButton("📸 اینستاگرام", callback_data="menu:media:instagram"), InlineKeyboardButton("👻 سناپ چات", callback_data="menu:media:snapchat")],
-        [InlineKeyboardButton("📱 فایلەکانی سۆشیال میدیا", callback_data="menu:media:upload")],
+        [InlineKeyboardButton(actions["facebook"], callback_data="menu:media:facebook"), InlineKeyboardButton(actions["tiktok"], callback_data="menu:media:tiktok")],
+        [InlineKeyboardButton(actions["instagram"], callback_data="menu:media:instagram"), InlineKeyboardButton(actions["snapchat"], callback_data="menu:media:snapchat")],
+        [InlineKeyboardButton(actions["social_files"], callback_data="menu:media:upload")],
         build_back_button(language),
     ])
 
@@ -890,12 +892,12 @@ def create_application(settings: Settings) -> Application:
         if data.startswith("menu:converter:"):
             context.user_data[MENU_MODE_KEY] = data.removeprefix("menu:")
             await query.answer()
-            await query.edit_message_text("📥 تکایە فایلەکە بنێرە بۆ دەستپێکردنی گۆڕین.", reply_markup=InlineKeyboardMarkup([build_back_button(language)]))
+            await query.edit_message_text(labels["converter_prompt"], reply_markup=InlineKeyboardMarkup([build_back_button(language)]))
             return
         if data.startswith("menu:media:"):
             context.user_data[MENU_MODE_KEY] = data.removeprefix("menu:")
             await query.answer()
-            await query.edit_message_text("🔗 تکایە لینکی میدیا بنێرە، یان فایلەکە ڕاستەوخۆ upload بکە.", reply_markup=InlineKeyboardMarkup([build_back_button(language)]))
+            await query.edit_message_text(labels["media_prompt"], reply_markup=InlineKeyboardMarkup([build_back_button(language)]))
             return
         await query.answer()
 
@@ -912,7 +914,7 @@ def create_application(settings: Settings) -> Application:
 
         context.user_data[SELECTED_LANGUAGE_KEY] = language
         context.user_data[MENU_MODE_KEY] = "main"
-        await query.answer(f"{language_labels[language]} selected")
+        await query.answer(MENU_TEXT[language]["language_chosen"])
         await query.edit_message_text(main_menu_text(language), reply_markup=build_main_menu(language))
 
     async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

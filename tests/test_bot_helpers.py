@@ -4,6 +4,8 @@ from types import SimpleNamespace
 from app.bot import (
     SUPPORTED_CONVERSION_OPERATIONS,
     build_main_menu,
+    build_converter_menu,
+    build_media_menu,
     extract_media_url,
     identity_response,
     is_identity_question,
@@ -15,6 +17,28 @@ from app.gemini_client import GeminiClient
 
 
 class GeminiClientTests(unittest.TestCase):
+    def test_converter_and_media_menus_are_localized(self):
+        expected_labels = {
+            "kurdish": "MP3 → Voice",
+            "persian": "MP3 → صدا",
+            "arabic": "فيديو ← MP3",
+            "english": "MP3 → Voice",
+            "turkish": "MP3 → Ses",
+        }
+        for language, expected in expected_labels.items():
+            converter_text = " ".join(
+                button.text
+                for row in build_converter_menu(language).inline_keyboard
+                for button in row
+            )
+            media_text = " ".join(
+                button.text
+                for row in build_media_menu(language).inline_keyboard
+                for button in row
+            )
+            self.assertIn(expected, converter_text)
+            self.assertTrue(media_text)
+
     def test_extract_media_url_ignores_trailing_punctuation(self):
         self.assertEqual(
             extract_media_url("download https://example.com/video?id=1."),
