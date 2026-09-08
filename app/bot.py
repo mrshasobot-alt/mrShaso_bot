@@ -3,14 +3,60 @@ from __future__ import annotations
 import logging
 import re
 
-from telegram import ChatPermissions, Update
-from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
+from telegram import ChatPermissions, InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.ext import (
+    Application,
+    CallbackQueryHandler,
+    CommandHandler,
+    ContextTypes,
+    MessageHandler,
+    filters,
+)
 
 from app.config import Settings
 from app.gemini_client import GeminiClient
 from app.music import find_track_preview
 
 logger = logging.getLogger(__name__)
+
+BOT_PROFILE_NAME = "🦋𝄟⃝ ᴠͥɪͣᴘͫ Ｓｈａ"
+START_MESSAGE_DELETE_DELAY = 5
+SELECTED_LANGUAGE_KEY = "selected_language"
+
+LANGUAGE_OPTIONS = (
+    ("کوردیی سۆرانی", "sorani"),
+    ("کوردیی کرمانجی", "kurmanji"),
+    ("فارسی", "persian"),
+    ("عەرەبی", "arabic"),
+    ("تورکی", "turkish"),
+    ("English", "english"),
+)
+
+
+def build_language_menu() -> InlineKeyboardMarkup:
+    keyboard = [
+        [InlineKeyboardButton(label, callback_data=f"language:{language}")]
+        for label, language in LANGUAGE_OPTIONS
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+
+def language_menu_text() -> str:
+    return "──────────\n🌐 Language / Ziman\n──────────"
+
+
+def build_selected_language_instruction(language: str) -> str:
+    language_names = {
+        "sorani": "Sorani Kurdish",
+        "kurmanji": "Kurmanji Kurdish",
+        "persian": "Persian",
+        "arabic": "Arabic",
+        "turkish": "Turkish",
+        "english": "English",
+    }
+    base_language = "kurdish" if language in {"sorani", "kurmanji"} else language
+    instruction = GeminiClient.build_system_prompt(base_language)
+    return f"{instruction} Always reply in {language_names.get(language, 'the selected language')}."
 
 
 def normalize_text(value: str) -> str:
@@ -308,6 +354,25 @@ def permissions_for_lock(action: str) -> ChatPermissions:
     return permissions_for_locks({action})
 
 
+def is_private_chat(update: Update) -> bool:
+    chat = update.effective_chat
+    return chat is not None and chat.type == "private"
+
+
+async def delete_start_response(context: ContextTypes.DEFAULT_TYPE) -> None:
+    job = context.job
+    if job is None or not isinstance(job.data, dict):
+        return
+
+    try:
+        await context.bot.delete_message(
+            chat_id=job.data["chat_id"],
+            message_id=job.data["message_id"],
+        )
+    except Exception:
+        logger.debug("Could not delete start response", exc_info=True)
+
+
 async def is_admin_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
     if not update.effective_chat or not update.effective_user:
         return False
@@ -340,22 +405,33 @@ def create_application(settings: Settings) -> Application:
                 logger.debug("Could not send error response: %s", reply_error, exc_info=True)
 
     async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-        if update is None or update.message is None:
+        if not is_private_chat(update) or update.message is None:
             return
 
-        user = update.effective_user
-        first_name = user.first_name if user and user.first_name else "friend"
-        chat = update.effective_chat
-        if chat is not None and chat.type == "private":
-            welcome_message = (
-                f"سڵاو {first_name} گیان! بەخێربێیت بۆ بۆتی تایبەتی من 👋✨\n\n"
-                "من لێرەم بۆ ئەوەی لە هەموو پرسیارێک یان کارێکدا یارمەتیت بدەم. "
-                "دەتوانیت ڕاستەوخۆ پرسیار یان داواکاریی خۆت بنێریت!"
+        response = await update.message.reply_text(BOT_PROFILE_NAME)
+        if context.job_queue is not None:
+            context.job_queue.run_once(
+                delete_start_response,
+                START_MESSAGE_DELETE_DELAY,
+                data={"chat_id": response.chat_id, "message_id": response.message_id},
             )
-        else:
-            welcome_message = f"سڵاو {first_name}، خێربێی 👋"
 
-        await update.message.reply_text(welcome_message)
+    async def select_language(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        query = update.callback_query
+        if query is None or not is_private_chat(update):
+            return
+
+        language = (query.data or "").removeprefix("language:")
+        language_labels = dict((value, label) for label, value in LANGUAGE_OPTIONS)
+        if language not in language_labels:
+            await query.answer()
+            return
+
+        context.user_data[SELECTED_LANGUAGE_KEY] = language
+        await query.answer(f"{language_labels[language]} selected")
+        await query.edit_message_text(
+            f"{language_menu_text()}\n\n✅ {language_labels[language]} هەڵبژێردرا."
+        )
 
     async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if update.message is not None:
@@ -368,7 +444,13 @@ def create_application(settings: Settings) -> Application:
 
         question = " ".join(context.args)
         await update.message.reply_text("Thinking...")
-        answer = gemini.ask(question)
+        selected_language = context.user_data.get(SELECTED_LANGUAGE_KEY)
+        system_instruction = (
+            build_selected_language_instruction(selected_language)
+            if selected_language
+            else None
+        )
+        answer = gemini.ask(question, system_instruction=system_instruction)
         await update.message.reply_text(answer)
 
     async def send_song_preview(update: Update, query: str) -> None:
@@ -415,13 +497,11 @@ def create_application(settings: Settings) -> Application:
         )
 
     async def language_info(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        if not is_private_chat(update) or update.message is None:
+            return
         await update.message.reply_text(
-            "Supported languages include:\n"
-            "- Arabic\n"
-            "- Kurdish\n"
-            "- Persian\n"
-            "- English\n"
-            "- and many more languages depending on the prompt"
+            language_menu_text(),
+            reply_markup=build_language_menu(),
         )
 
     async def clear_context(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -441,6 +521,45 @@ def create_application(settings: Settings) -> Application:
         if message.message_id not in tracked_message_ids:
             tracked_message_ids.append(message.message_id)
             del tracked_message_ids[:-500]
+
+    async def handle_group_member_update(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        message = update.effective_message
+        chat = update.effective_chat
+        if not message or not chat or chat.type not in {"group", "supergroup"}:
+            return
+
+        try:
+            bot_member = await context.bot.get_chat_member(chat.id, context.bot.id)
+        except Exception:
+            logger.warning("Could not verify bot permissions in chat %s", chat.id, exc_info=True)
+            return
+
+        if bot_member.status not in {"administrator", "creator"} or (
+            bot_member.status == "administrator"
+            and not bot_member.can_delete_messages
+        ):
+            logger.warning("Bot needs Delete Messages permission in chat %s", chat.id)
+            return
+
+        try:
+            await context.bot.delete_message(chat_id=chat.id, message_id=message.message_id)
+        except Exception:
+            logger.warning(
+                "Could not delete group member service message in chat %s",
+                chat.id,
+                exc_info=True,
+            )
+            return
+
+        for member in message.new_chat_members or []:
+            full_name = " ".join(
+                part for part in (member.first_name, member.last_name) if part
+            )
+            member_name = f"@{member.username}" if member.username else full_name
+            await context.bot.send_message(
+                chat_id=chat.id,
+                text=f"🌟 بەخێربێیت {member_name}! خۆشحاڵین بە هاتنت بۆ گرووپەکەمان. 🌟",
+            )
 
     async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if update is None or context is None:
@@ -582,7 +701,12 @@ def create_application(settings: Settings) -> Application:
                 prompt = "\n".join(f"User: {item['content']}" for item in recent_history)
                 detected_language = GeminiClient.detect_language(text)
 
-                system_instruction = GeminiClient.build_system_prompt(detected_language)
+                selected_language = context.user_data.get(SELECTED_LANGUAGE_KEY)
+                system_instruction = (
+                    build_selected_language_instruction(selected_language)
+                    if selected_language
+                    else GeminiClient.build_system_prompt(detected_language)
+                )
                 answer = gemini.ask(prompt, system_instruction=system_instruction)
                 chat_history.append({"role": "assistant", "content": answer})
                 await update.message.reply_text(answer)
@@ -622,7 +746,12 @@ def create_application(settings: Settings) -> Application:
         prompt = "\n".join(f"User: {item['content']}" for item in recent_history)
         detected_language = GeminiClient.detect_language(text)
 
-        system_instruction = GeminiClient.build_system_prompt(detected_language)
+        selected_language = context.user_data.get(SELECTED_LANGUAGE_KEY)
+        system_instruction = (
+            build_selected_language_instruction(selected_language)
+            if selected_language
+            else GeminiClient.build_system_prompt(detected_language)
+        )
         answer = gemini.ask(prompt, system_instruction=system_instruction)
 
         chat_history.append({"role": "assistant", "content": answer})
@@ -636,6 +765,16 @@ def create_application(settings: Settings) -> Application:
     application.add_handler(CommandHandler("status", status))
     application.add_handler(CommandHandler("language", language_info))
     application.add_handler(CommandHandler("clear", clear_context))
+    application.add_handler(
+        CallbackQueryHandler(select_language, pattern=r"^language:")
+    )
+    application.add_handler(
+        MessageHandler(
+            filters.StatusUpdate.NEW_CHAT_MEMBERS | filters.StatusUpdate.LEFT_CHAT_MEMBER,
+            handle_group_member_update,
+        ),
+        group=-2,
+    )
     application.add_handler(MessageHandler(filters.ALL, track_group_message), group=-1)
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
