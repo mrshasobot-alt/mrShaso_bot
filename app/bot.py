@@ -81,6 +81,24 @@ MENU_TEXT = {
     "turkish": {"title": "🦋 MrShaso Ana Menü", "language": "🌐 Dil", "chat": "💬 Sohbet", "converter": "🛠️ Dönüştürücü", "media": "Medya bağlantısı indirici", "social_files": "Sosyal medya dosyaları", "refresh": "🔄 Menüyü yenile", "back": "🔙 Ana menüye dön", "choose": "Bir bölüm seçin:", "language_chosen": "Dil seçildi: Türkçe", "converter_prompt": "📥 Dönüştürmek için bir dosya gönderin.", "media_prompt": "🔗 Bir medya bağlantısı veya dosya gönderin."},
 }
 
+RUNTIME_TEXT = {
+    "kurdish": {
+        "error": "⚠️ هەڵەیەک ڕوویدا. تکایە دووبارە هەوڵ بدەرەوە.", "thinking": "بیر دەکەمەوە...", "usage_ask": "بەکارهێنان: /ask <پرسیار>", "cleared": "✅ کۆنتێکستی گفتوگۆ پاککرایەوە.", "online": "✅ بۆتەکە چالاکە", "language_support": "پشتیوانی زمان: کوردی، فارسی، عەرەبی، ئینگلیزی و زیاتر", "searching": "⏳ بەدوای میدیا دەگەڕێم و دایدەگرم...", "download_error": "⚠️ نەتوانرا ئەم لینکە جێبەجێ بکرێت: {error}", "stored": "✅ فایلەکە بە سەرکەوتوویی لە فایلەکانی سۆشیال میدیا هەڵگیرا.", "file_error": "⚠️ نەتوانرا فایلەکە جێبەجێ بکرێت: {error}", "wrong_link": "⚠️ ئەم لینکە هی بەشی {platform} نییە. تکایە لە بەشی تایبەتی خۆیدا بەکاری بهێنە.", "locked": "🔒 {action_label} داخرا.", "unlocked": "🔓 {action_label} کرایەوە.", "failed_restriction": "⚠️ نەتوانرا سنووردارییەکە نوێ بکرێتەوە.", "unmuted": "🔊 بەکارهێنەر {name} لە بێدەنگی دەرکرا.", "muted": "🔇 بەکارهێنەر {name} بێدەنگ کرا.", "banned": "⛔ بەکارهێنەر {name} ڕاگیرا.", "failed_moderation": "⚠️ فەرمانی چاودێری جێبەجێ نەکرا.", "upload": "🔗 تکایە لینک یان فایلێکی میدیا بنێرە."},
+    "persian": {
+        "error": "⚠️ خطایی رخ داد. دوباره تلاش کنید.", "thinking": "در حال فکر کردن...", "usage_ask": "نحوه استفاده: /ask <سؤال>", "cleared": "✅ زمینه گفتگو پاک شد.", "online": "✅ ربات فعال است", "language_support": "پشتیبانی زبان: کردی، فارسی، عربی، انگلیسی و بیشتر", "searching": "⏳ در حال دریافت رسانه...", "download_error": "⚠️ لینک اجرا نشد: {error}", "stored": "✅ فایل در فایل‌های شبکه‌های اجتماعی ذخیره شد.", "file_error": "⚠️ فایل پردازش نشد: {error}", "wrong_link": "⚠️ این لینک مربوط به بخش {platform} نیست.", "locked": "🔒 {action_label} قفل شد.", "unlocked": "🔓 {action_label} باز شد.", "failed_restriction": "⚠️ محدودیت به‌روزرسانی نشد.", "unmuted": "🔊 کاربر {name} از سکوت خارج شد.", "muted": "🔇 کاربر {name} بی‌صدا شد.", "banned": "⛔ کاربر {name} مسدود شد.", "failed_moderation": "⚠️ فرمان مدیریت اجرا نشد.", "upload": "🔗 لطفاً لینک یا فایل رسانه‌ای ارسال کنید."},
+    "arabic": {
+        "error": "⚠️ حدث خطأ. حاول مرة أخرى.", "thinking": "جارٍ التفكير...", "usage_ask": "الاستخدام: /ask <سؤالك>", "cleared": "✅ تم مسح سياق المحادثة.", "online": "✅ البوت يعمل", "language_support": "اللغات المدعومة: الكردية والفارسية والعربية والإنجليزية وغيرها", "searching": "⏳ جارٍ تنزيل الوسائط...", "download_error": "⚠️ تعذر تنفيذ الرابط: {error}", "stored": "✅ تم حفظ الملف في ملفات التواصل الاجتماعي.", "file_error": "⚠️ تعذر معالجة الملف: {error}", "wrong_link": "⚠️ هذا الرابط ليس لقسم {platform}.", "locked": "🔒 تم قفل {action_label}.", "unlocked": "🔓 تم فتح {action_label}.", "failed_restriction": "⚠️ تعذر تحديث القيد.", "unmuted": "🔊 تم إلغاء كتم {name}.", "muted": "🔇 تم كتم {name}.", "banned": "⛔ تم حظر {name}.", "failed_moderation": "⚠️ تعذر تنفيذ أمر الإدارة.", "upload": "🔗 أرسل رابط وسائط أو ملفًا."},
+    "english": {
+        "error": "⚠️ Something went wrong. Please try again.", "thinking": "Thinking...", "usage_ask": "Usage: /ask <your question>", "cleared": "✅ Conversation context cleared.", "online": "✅ Bot is online", "language_support": "Language support: Kurdish, Persian, Arabic, English, and more", "searching": "⏳ Downloading media...", "download_error": "⚠️ Could not process this link: {error}", "stored": "✅ File saved in Social Media Files.", "file_error": "⚠️ Could not process this file: {error}", "wrong_link": "⚠️ This link does not belong to the {platform} section.", "locked": "🔒 {action_label} locked.", "unlocked": "🔓 {action_label} unlocked.", "failed_restriction": "⚠️ Could not update the restriction.", "unmuted": "🔊 User {name} unmuted.", "muted": "🔇 User {name} muted.", "banned": "⛔ User {name} banned.", "failed_moderation": "⚠️ Could not apply the moderation command.", "upload": "🔗 Send a media link or upload a file."},
+    "turkish": {
+        "error": "⚠️ Bir hata oluştu. Lütfen tekrar deneyin.", "thinking": "Düşünüyorum...", "usage_ask": "Kullanım: /ask <sorunuz>", "cleared": "✅ Konuşma bağlamı temizlendi.", "online": "✅ Bot çevrimiçi", "language_support": "Dil desteği: Kürtçe, Farsça, Arapça, İngilizce ve daha fazlası", "searching": "⏳ Medya indiriliyor...", "download_error": "⚠️ Bu bağlantı işlenemedi: {error}", "stored": "✅ Dosya Sosyal Medya Dosyaları'na kaydedildi.", "file_error": "⚠️ Dosya işlenemedi: {error}", "wrong_link": "⚠️ Bu bağlantı {platform} bölümüne ait değil.", "locked": "🔒 {action_label} kilitlendi.", "unlocked": "🔓 {action_label} açıldı.", "failed_restriction": "⚠️ Kısıtlama güncellenemedi.", "unmuted": "🔊 {name} kullanıcısının sessizliği kaldırıldı.", "muted": "🔇 {name} susturuldu.", "banned": "⛔ {name} kullanıcısı engellendi.", "failed_moderation": "⚠️ Yönetim komutu uygulanamadı.", "upload": "🔗 Bir medya bağlantısı veya dosya gönderin."},
+}
+
+
+def localized_message(language: str | None, key: str, **values: object) -> str:
+    selected = _menu_language(language)
+    return RUNTIME_TEXT[selected][key].format(**values)
+
 CHAT_WELCOME_TEXT = {
     "kurdish": "بەخێربێی بەڕێزم چۆن دەتوانم هاوکاریت بکەم ؟☺️",
     "persian": "خوش آمدی عزیزم، چطور می‌توانم کمکت کنم؟ ☺️",
@@ -599,26 +617,17 @@ def is_command_guide_request(text: str) -> bool:
         "كيف استخدم البوت", "مساعدة",
     }
 
-def build_command_guide() -> str:
-    return (
-        "ڕێنمایی فەرمانەکانی بۆت:\n\n"
-        "لە چاتی تایبەت:\n"
-        "• /start - دەستپێکردن\n"
-        "• /help - پیشاندانی ئەم ڕێنماییە\n"
-        "• /ask <پرسیار> - پرسیارکردن لە Gemini\n"
-        "• /status - دۆخی بۆت\n"
-        "• /language - زمانە پشتگیریکراوەکان\n"
-        "• /clear - پاککردنەوەی context ـی گفتوگۆ\n\n"
-        "لە گرووپ، تەنها Admin/Manager:\n"
-        "• قفڵکردن: قفل گیف، قفل موزیک، قفل فیلم، قفل عکس، قفل فایل، قفل همه\n"
-        "• کردنەوەی قفڵ: باز کردن گیف، باز کردن موزیک، باز کردن فیلم، باز کردن عکس، باز کردن فایل، باز کردن همه\n"
-        "• پاکسازی: پاکسازی 50، clean 100، حذف 50\n"
-        "• بێدەنگکردن: سکوت، صامت، mute، بێدەنگی (تەنها بە Reply یان @username)\n"
-        "• ئازادکردن: لغو سکوت، رفع الكتم، unmute (تەنها بە Reply یان @username)\n"
-        "• سزا/ban: بن، ریمو، ban، kick (تەنها بە Reply یان @username)\n\n"
-        "فەرمانەکانی قفڵ، کردنەوەی قفڵ و پاکسازی بە ڕاستەوخۆ لە گرووپ کار دەکەن.\n"
-        "بۆ کارکردنی فەرمانەکانی گرووپ، بۆت دەبێت لە گرووپدا Admin بێت و دەسەڵاتی سڕینەوە و گۆڕینی permissions ـی هەبێت."
-    )
+COMMAND_GUIDES = {
+    "kurdish": "ڕێنمایی فەرمانەکانی بۆت:\n\n• /start - دەستپێکردن\n• /help - ئەم ڕێنماییە\n• /ask <پرسیار> - پرسیارکردن لە Gemini\n• /status - دۆخی بۆت\n• /language - زمانەکان\n• /clear - پاککردنەوەی گفتوگۆ\n\nلە گرووپ، تەنها Admin/Manager:\n• قفڵکردن و کردنەوەی قفڵی میدیا\n• پاکسازی: پاکسازی 50، clean 100، حذف 50\n• بێدەنگکردن و ئازادکردن تەنها بە Reply یان @username\n• سزا/ban تەنها بە Reply یان @username\n\nبۆتەکە دەبێت لە گرووپدا Admin بێت و دەسەڵاتی سڕینەوە و گۆڕینی permissions ـی هەبێت.",
+    "persian": "راهنمای دستورات ربات:\n\n• /start - شروع\n• /help - این راهنما\n• /ask <سؤال> - پرسش از Gemini\n• /status - وضعیت ربات\n• /language - زبان‌ها\n• /clear - پاک کردن گفتگو\n\nدر گروه فقط مدیر می‌تواند دستورات مدیریتی را اجرا کند.",
+    "arabic": "دليل أوامر البوت:\n\n• /start - البدء\n• /help - هذا الدليل\n• /ask <سؤال> - سؤال Gemini\n• /status - حالة البوت\n• /language - اللغات\n• /clear - مسح المحادثة\n\nفي المجموعة يستطيع المشرف فقط تنفيذ أوامر الإدارة.",
+    "english": "Bot command guide:\n\n• /start - Start\n• /help - This guide\n• /ask <question> - Ask Gemini\n• /status - Bot status\n• /language - Languages\n• /clear - Clear conversation\n\nOnly group administrators can run moderation commands.",
+    "turkish": "Bot komutları:\n\n• /start - Başlat\n• /help - Bu rehber\n• /ask <soru> - Gemini’ye sor\n• /status - Bot durumu\n• /language - Diller\n• /clear - Sohbeti temizle\n\nGrupta yönetim komutlarını yalnızca yöneticiler çalıştırabilir.",
+}
+
+
+def build_command_guide(language: str = "kurdish") -> str:
+    return COMMAND_GUIDES[_menu_language(language)]
 
 def detect_lock_action(text: str) -> str | None:
     normalized = normalize_text(text)
@@ -773,7 +782,7 @@ def create_application(settings: Settings) -> Application:
         if effective_message is not None:
             try:
                 await effective_message.reply_text(
-                    "⚠️ Something went wrong. Please try again in a moment."
+                    localized_message(context.user_data.get(SELECTED_LANGUAGE_KEY), "error")
                 )
             except Exception as reply_error:
                 logger.debug("Could not send error response: %s", reply_error, exc_info=True)
@@ -822,7 +831,8 @@ def create_application(settings: Settings) -> Application:
         message = update.message
         if message is None:
             return
-        await message.reply_text("⏳ بەدوای میدیا دەگەڕێم و دایدەگرم...")
+        language = context.user_data.get(SELECTED_LANGUAGE_KEY)
+        await message.reply_text(localized_message(language, "searching"))
         try:
             with tempfile.TemporaryDirectory(prefix="mrshaso_media_") as workdir:
                 downloaded = await asyncio.to_thread(_download_url_sync, url, workdir)
@@ -831,7 +841,7 @@ def create_application(settings: Settings) -> Application:
                 await send_media_file(message, context, downloaded, operation)
         except Exception as exc:
             logger.exception("Media URL processing failed for %s", url)
-            await message.reply_text(f"⚠️ نەتوانرا ئەم لینکە جێبەجێ بکرێت: {exc}")
+            await message.reply_text(localized_message(language, "download_error", error=exc))
 
     async def handle_media_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         message = update.message
@@ -846,13 +856,13 @@ def create_application(settings: Settings) -> Application:
                 source = await download_telegram_media(message, context, workdir)
                 if mode == "media:upload":
                     await store_social_media_file(message, message, source, context)
-                    await message.reply_text("✅ فایلەکە بە سەرکەوتوویی خراوەتە ناو Social Media Files.")
+                    await message.reply_text(localized_message(context.user_data.get(SELECTED_LANGUAGE_KEY), "stored"))
                     return
                 converted = await asyncio.to_thread(_convert_media_sync, source, mode.removeprefix("converter:"), workdir)
                 await send_media_file(message, context, converted, mode.removeprefix("converter:"))
         except Exception as exc:
             logger.exception("Telegram media processing failed")
-            await message.reply_text(f"⚠️ نەتوانرا فایلەکە جێبەجێ بکرێت: {exc}")
+            await message.reply_text(localized_message(context.user_data.get(SELECTED_LANGUAGE_KEY), "file_error", error=exc))
 
     async def send_social_media_gallery(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> None:
         if not SOCIAL_MEDIA_DIRECTORY.exists():
@@ -952,11 +962,11 @@ def create_application(settings: Settings) -> Application:
 
     async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if update.message is not None:
-            await update.message.reply_text(build_command_guide())
+            await update.message.reply_text(build_command_guide(context.user_data.get(SELECTED_LANGUAGE_KEY)))
 
     async def ask_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if not context.args:
-            await update.message.reply_text("Usage: /ask <your question>")
+            await update.message.reply_text(localized_message(context.user_data.get(SELECTED_LANGUAGE_KEY), "usage_ask"))
             return
 
         question = " ".join(context.args)
@@ -964,18 +974,19 @@ def create_application(settings: Settings) -> Application:
             await update.message.reply_text(identity_response(question))
             return
 
-        await update.message.reply_text("Thinking...")
+        await update.message.reply_text(localized_message(context.user_data.get(SELECTED_LANGUAGE_KEY), "thinking"))
         selected_language = context.user_data.get(SELECTED_LANGUAGE_KEY)
         system_instruction = build_response_instruction(question, selected_language)
         answer = gemini.ask(question, system_instruction=system_instruction)
         await update.message.reply_text(answer)
 
     async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        language = context.user_data.get(SELECTED_LANGUAGE_KEY)
         await update.message.reply_text(
-            "✅ Bot is online\n"
+            localized_message(language, "online") + "\n"
             f"Model: {settings.gemini_model}\n"
             "AI engine: Gemini\n"
-            "Language support: Arabic, Kurdish, Persian, English, and more"
+            + localized_message(language, "language_support")
         )
 
     async def language_info(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -989,7 +1000,7 @@ def create_application(settings: Settings) -> Application:
     async def clear_context(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         context.user_data.clear()
         context.chat_data.clear()
-        await update.message.reply_text("✅ Conversation context cleared.")
+        await update.message.reply_text(localized_message(context.user_data.get(SELECTED_LANGUAGE_KEY), "cleared"))
 
     async def track_group_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if update is None:
@@ -1090,7 +1101,11 @@ def create_application(settings: Settings) -> Application:
         if not is_group_chat and url and mode.startswith("media:") and not media_url_matches_mode(url, mode):
             platform = detect_media_platform(url)
             await update.message.reply_text(
-                f"⚠️ ئەم لینکە هی بەشی {platform or 'ئەم بەشە'} نییە. تکایە لە مینیوی تایبەتی خۆیدا دایدەبەزێنە."
+                localized_message(
+                    context.user_data.get(SELECTED_LANGUAGE_KEY),
+                    "wrong_link",
+                    platform=platform or "this",
+                )
             )
             return
         if not is_group_chat and url and (mode.startswith("media:") or mode.startswith("converter:")):
@@ -1167,11 +1182,13 @@ def create_application(settings: Settings) -> Application:
                     )
                     action_label = lock_action or unlock_action
                     status = "locked" if lock_action else "unlocked"
-                    await update.message.reply_text(f"🔒 {action_label} {status}.")
+                    language = context.user_data.get(SELECTED_LANGUAGE_KEY)
+                    message_key = "locked" if lock_action else "unlocked"
+                    await update.message.reply_text(localized_message(language, message_key, action_label=action_label))
                 except Exception as exc:
                     action_label = lock_action or unlock_action
                     logger.exception("Failed to update %s in chat: %s", action_label, exc)
-                    await update.message.reply_text("⚠️ Failed to update that restriction.")
+                    await update.message.reply_text(localized_message(context.user_data.get(SELECTED_LANGUAGE_KEY), "failed_restriction"))
                 return
 
             moderation_action = detect_moderation_action(text)
@@ -1197,7 +1214,7 @@ def create_application(settings: Settings) -> Application:
                             ),
                             until_date=None,
                         )
-                        await update.message.reply_text(f"🔊 User {target_user.first_name} unmuted.")
+                        await update.message.reply_text(localized_message(context.user_data.get(SELECTED_LANGUAGE_KEY), "unmuted", name=target_user.first_name))
                     elif moderation_action == "mute":
                         await context.bot.restrict_chat_member(
                             chat_id=chat.id,
@@ -1211,17 +1228,17 @@ def create_application(settings: Settings) -> Application:
                             ),
                             until_date=None,
                         )
-                        await update.message.reply_text(f"🔇 User {target_user.first_name} muted.")
+                        await update.message.reply_text(localized_message(context.user_data.get(SELECTED_LANGUAGE_KEY), "muted", name=target_user.first_name))
                     else:
                         await context.bot.ban_chat_member(
                             chat_id=chat.id,
                             user_id=target_user.id,
                             until_date=None,
                         )
-                        await update.message.reply_text(f"⛔ User {target_user.first_name} banned.")
+                        await update.message.reply_text(localized_message(context.user_data.get(SELECTED_LANGUAGE_KEY), "banned", name=target_user.first_name))
                 except Exception as exc:
                     logger.exception("Failed to apply group moderation command: %s", exc)
-                    await update.message.reply_text("⚠️ Failed to apply that moderation command.")
+                    await update.message.reply_text(localized_message(context.user_data.get(SELECTED_LANGUAGE_KEY), "failed_moderation"))
                 return
 
             if should_answer_identity(update, context.bot.id):
@@ -1259,7 +1276,7 @@ def create_application(settings: Settings) -> Application:
             return
 
         if is_command_guide_request(text):
-            await update.message.reply_text(build_command_guide())
+            await update.message.reply_text(build_command_guide(context.user_data.get(SELECTED_LANGUAGE_KEY)))
             return
 
         chat_history = context.chat_data.setdefault("history", [])
