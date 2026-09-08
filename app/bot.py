@@ -122,7 +122,7 @@ def build_back_button(language: str) -> list[InlineKeyboardButton]:
 
 
 def build_section_header(label: str, section: str) -> list[InlineKeyboardButton]:
-    return [InlineKeyboardButton(f"─── {label} ───", callback_data=f"menu:section:{section}")]
+    return [InlineKeyboardButton(f"— {label} —", callback_data=f"menu:section:{section}")]
 
 
 def build_main_menu(language: str = "kurdish") -> InlineKeyboardMarkup:
@@ -133,14 +133,14 @@ def build_main_menu(language: str = "kurdish") -> InlineKeyboardMarkup:
         build_section_header(labels["language"], "language"),
         language_buttons[:3],
         language_buttons[3:],
-        [InlineKeyboardButton(f"─── {PRIVATE_CHAT_HEADER_TEXT[_menu_language(language)]} ───", callback_data="menu:chat")],
+        [InlineKeyboardButton(f"— {PRIVATE_CHAT_HEADER_TEXT[_menu_language(language)]} —", callback_data="menu:chat")],
         build_section_header(labels["converter"], "converter"),
         [InlineKeyboardButton(actions["mp3_voice"], callback_data="menu:converter:mp3_voice"), InlineKeyboardButton(actions["voice_mp3"], callback_data="menu:converter:voice_mp3")],
         [InlineKeyboardButton(actions["video_mp3"], callback_data="menu:converter:video_mp3"), InlineKeyboardButton(actions["video_voice"], callback_data="menu:converter:video_voice")],
         build_section_header(labels["media"], "media"),
         [InlineKeyboardButton(actions["facebook"], callback_data="menu:media:facebook"), InlineKeyboardButton(actions["tiktok"], callback_data="menu:media:tiktok")],
         [InlineKeyboardButton(actions["instagram"], callback_data="menu:media:instagram"), InlineKeyboardButton(actions["snapchat"], callback_data="menu:media:snapchat")],
-        [InlineKeyboardButton(f"─── 📱 {labels['social_files']} ───", callback_data="menu:media:upload")],
+        [InlineKeyboardButton(f"— 📱 {labels['social_files']} —", callback_data="menu:media:upload")],
         [InlineKeyboardButton(labels["refresh"], callback_data="menu:main")],
     ])
 
