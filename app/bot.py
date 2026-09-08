@@ -52,6 +52,14 @@ MENU_TEXT = {
     "turkish": {"title": "🦋 MrShaso Ana Menü", "language": "🌐 Dil", "chat": "💬 Sohbet", "converter": "🛠️ Dönüştürücü", "media": "Medya bağlantısı indirici", "files": "📁 Dosyalar", "refresh": "🔄 Menüyü yenile", "back": "🔙 Ana menüye dön", "choose": "Bir bölüm seçin:", "language_chosen": "Dil seçildi: Türkçe"},
 }
 
+CHAT_WELCOME_TEXT = {
+    "kurdish": "بەخێربێی بەڕێزم چۆن دەتوانم هاوکاریت بکەم ؟☺️",
+    "persian": "خوش آمدی عزیزم، چطور می‌توانم کمکت کنم؟ ☺️",
+    "arabic": "أهلًا بك عزيزي، كيف يمكنني مساعدتك؟ ☺️",
+    "english": "Welcome, dear. How can I help you? ☺️",
+    "turkish": "Hoş geldin, nasıl yardımcı olabilirim? ☺️",
+}
+
 MENU_ACTION_TEXT = {
     "kurdish": {
         "mp3_voice": "🎵 MP3 → Voice", "voice_mp3": "🎙️ Voice → MP3",
@@ -833,7 +841,7 @@ def create_application(settings: Settings) -> Application:
         if data == "menu:chat":
             context.user_data[MENU_MODE_KEY] = "chat"
             await query.answer()
-            await query.edit_message_text("بەخێربێی بەڕێزم چۆن دەتوانم هاوکاریت بکەم ؟☺️", reply_markup=InlineKeyboardMarkup([build_back_button(language)]))
+            await query.edit_message_text(CHAT_WELCOME_TEXT[_menu_language(language)], reply_markup=InlineKeyboardMarkup([build_back_button(language)]))
             return
         if data == "menu:converter":
             context.user_data[MENU_MODE_KEY] = "converter"
