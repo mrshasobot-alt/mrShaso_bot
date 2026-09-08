@@ -88,22 +88,28 @@ def build_back_button(language: str) -> list[InlineKeyboardButton]:
     return [InlineKeyboardButton(MENU_TEXT[_menu_language(language)]["back"], callback_data="menu:main")]
 
 
+def build_section_header(label: str, section: str) -> list[InlineKeyboardButton]:
+    return [InlineKeyboardButton(f"─── {label} ───", callback_data=f"menu:section:{section}")]
+
+
 def build_main_menu(language: str = "kurdish") -> InlineKeyboardMarkup:
     labels = MENU_TEXT[_menu_language(language)]
     actions = MENU_ACTION_TEXT[_menu_language(language)]
     language_buttons = [InlineKeyboardButton(label, callback_data=f"language:{code}") for label, code in LANGUAGE_OPTIONS]
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton(labels["language"], callback_data="menu:language")],
+        build_section_header(labels["language"], "language"),
         language_buttons[:3],
         language_buttons[3:],
+        build_section_header(labels["chat"], "chat"),
         [InlineKeyboardButton(labels["chat"], callback_data="menu:chat")],
-        [InlineKeyboardButton(f"─── {labels['converter']} ───", callback_data="menu:converter")],
+        build_section_header(labels["converter"], "converter"),
         [InlineKeyboardButton(actions["mp3_voice"], callback_data="menu:converter:mp3_voice"), InlineKeyboardButton(actions["voice_mp3"], callback_data="menu:converter:voice_mp3")],
         [InlineKeyboardButton(actions["video_mp3"], callback_data="menu:converter:video_mp3"), InlineKeyboardButton(actions["video_voice"], callback_data="menu:converter:video_voice")],
-        [InlineKeyboardButton(f"─── {labels['media']} ───", callback_data="menu:media")],
+        build_section_header(labels["media"], "media"),
         [InlineKeyboardButton(actions["facebook"], callback_data="menu:media:facebook"), InlineKeyboardButton(actions["tiktok"], callback_data="menu:media:tiktok")],
         [InlineKeyboardButton(actions["instagram"], callback_data="menu:media:instagram"), InlineKeyboardButton(actions["snapchat"], callback_data="menu:media:snapchat")],
         [InlineKeyboardButton(actions["social_files"], callback_data="menu:media:upload")],
+        build_section_header(labels["files"], "files"),
         [InlineKeyboardButton(actions["archive"], callback_data="menu:files:archive")],
         [InlineKeyboardButton(labels["refresh"], callback_data="menu:main")],
     ])
