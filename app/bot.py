@@ -20,7 +20,7 @@ from app.music import find_track_preview
 logger = logging.getLogger(__name__)
 
 BOT_PROFILE_NAME = "🦋𝄟⃝ ᴠͥɪͣᴘͫ Ｓｈａ"
-START_MESSAGE_DELETE_DELAY = 5
+START_MESSAGE_DELETE_DELAY = 30
 SELECTED_LANGUAGE_KEY = "selected_language"
 
 LANGUAGE_OPTIONS = (
@@ -415,6 +415,10 @@ def create_application(settings: Settings) -> Application:
                 START_MESSAGE_DELETE_DELAY,
                 data={"chat_id": response.chat_id, "message_id": response.message_id},
             )
+        await update.message.reply_text(
+            language_menu_text(),
+            reply_markup=build_language_menu(),
+        )
 
     async def select_language(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         query = update.callback_query
