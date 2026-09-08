@@ -1,7 +1,15 @@
 from __future__ import annotations
 
+import asyncio
 import logging
+import mimetypes
+import os
 import re
+import shutil
+import subprocess
+import tempfile
+from pathlib import Path
+from urllib.parse import urlparse
 
 from telegram import ChatPermissions, InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (
@@ -19,6 +27,9 @@ from app.gemini_client import GeminiClient
 from app.music import find_track_preview
 
 logger = logging.getLogger(__name__)
+
+MEDIA_URL_PATTERN = re.compile(r"https?://[^\s<>]+", re.IGNORECASE)
+ARCHIVE_DIRECTORY = Path("media_archive")
 
 BOT_PROFILE_NAME = "🦋𝄟⃝ ᴠͥɪͣᴘͫ Ｓｈａ"
 START_MESSAGE_DELETE_DELAY = 30
@@ -298,6 +309,71 @@ def normalize_text(value: str) -> str:
     text = re.sub(r"[\u200c\u200d\s\t\n]+", " ", text)
     text = re.sub(r"[^\w\s\u0600-\u06ff\u0750-\u077f\u08a0-\u08ff]", " ", text)
     return " ".join(text.split())
+
+
+def extract_media_url(text: str) -> str | None:
+    match = MEDIA_URL_PATTERN.search(text or "")
+    if not match:
+        return None
+    url = match.group(0).rstrip(".,!?)]}")
+    parsed = urlparse(url)
+    return url if parsed.scheme in {"http", "https"} and parsed.netloc else None
+
+
+def _download_url_sync(url: str, workdir: str) -> Path:
+    try:
+        import yt_dlp
+    except ImportError as exc:
+        raise RuntimeError("yt-dlp is not installed") from exc
+
+    options = {
+        "outtmpl": str(Path(workdir) / "download.%(ext)s"),
+        "format": "bestvideo*+bestaudio/best",
+        "merge_output_format": "mp4",
+        "noplaylist": True,
+        "quiet": True,
+        "no_warnings": True,
+        "restrictfilenames": True,
+    }
+    with yt_dlp.YoutubeDL(options) as downloader:
+        downloader.download([url])
+
+    candidates = [path for path in Path(workdir).iterdir() if path.is_file()]
+    if not candidates:
+        raise RuntimeError("No media was downloaded")
+    return max(candidates, key=lambda path: path.stat().st_mtime)
+
+
+def _convert_media_sync(source: Path, operation: str, workdir: str) -> Path:
+    output_suffix = ".mp3" if operation in {"voice_mp3", "video_mp3"} else ".ogg"
+    output = Path(workdir) / f"converted{output_suffix}"
+    codec_args = ["-vn", "-codec:a", "libmp3lame", "-q:a", "4"] if output_suffix == ".mp3" else [
+        "-vn", "-codec:a", "libopus", "-b:a", "64k"
+    ]
+    if operation == "video_voice":
+        codec_args = ["-vn", "-codec:a", "libopus", "-b:a", "64k"]
+
+    command = ["ffmpeg", "-y", "-i", str(source), *codec_args, str(output)]
+    try:
+        subprocess.run(command, check=True, capture_output=True, text=True)
+    except FileNotFoundError as exc:
+        raise RuntimeError("ffmpeg is not installed or is not on PATH") from exc
+    except subprocess.CalledProcessError as exc:
+        raise RuntimeError("ffmpeg could not convert this media") from exc
+    return output
+
+
+def _media_suffix(message: object) -> str:
+    for attribute in ("audio", "voice", "video", "video_note", "document"):
+        media = getattr(message, attribute, None)
+        if media is not None:
+            filename = getattr(media, "file_name", None) or ""
+            suffix = Path(filename).suffix
+            if suffix:
+                return suffix
+            mime_type = getattr(media, "mime_type", None)
+            return mimetypes.guess_extension(mime_type or "") or ".bin"
+    return ".bin"
 
 
 def is_greeting_message(text: str) -> bool:
@@ -636,6 +712,93 @@ def create_application(settings: Settings) -> Application:
             except Exception as reply_error:
                 logger.debug("Could not send error response: %s", reply_error, exc_info=True)
 
+    async def archive_media(message: object, sent_message: object, source_path: Path, context: ContextTypes.DEFAULT_TYPE) -> None:
+        ARCHIVE_DIRECTORY.mkdir(parents=True, exist_ok=True)
+        chat_id = getattr(getattr(message, "chat", None), "id", "unknown")
+        message_id = getattr(sent_message, "message_id", "unknown")
+        archive_path = ARCHIVE_DIRECTORY / f"{chat_id}_{message_id}{source_path.suffix}"
+        try:
+            shutil.copy2(source_path, archive_path)
+        except OSError:
+            logger.warning("Could not save local media archive", exc_info=True)
+
+        if settings.archive_chat_id is None or not sent_message:
+            return
+        try:
+            await context.bot.copy_message(
+                chat_id=settings.archive_chat_id,
+                from_chat_id=getattr(getattr(sent_message, "chat", None), "id", chat_id),
+                message_id=message_id,
+            )
+        except Exception:
+            logger.warning("Could not copy media to archive chat", exc_info=True)
+
+    async def send_media_file(message: object, context: ContextTypes.DEFAULT_TYPE, path: Path, operation: str | None = None) -> object:
+        suffix = path.suffix.lower()
+        if operation in {"voice_mp3", "video_mp3"} or suffix in {".mp3", ".m4a", ".wav", ".flac"}:
+            sent = await message.reply_audio(audio=str(path))
+        elif operation in {"mp3_voice", "video_voice"} or suffix == ".ogg":
+            sent = await message.reply_voice(voice=str(path))
+        elif suffix in {".mp4", ".mkv", ".webm", ".mov", ".avi"}:
+            sent = await message.reply_video(video=str(path), supports_streaming=True)
+        else:
+            raise RuntimeError("Unsupported media type")
+        await archive_media(message, sent, path, context)
+        return sent
+
+    async def download_telegram_media(message: object, context: ContextTypes.DEFAULT_TYPE, workdir: str) -> Path:
+        media = next(
+            (
+                getattr(message, name, None)
+                for name in ("audio", "voice", "video", "video_note", "document")
+                if getattr(message, name, None) is not None
+            ),
+            None,
+        )
+        if media is None:
+            raise RuntimeError("No supported media was attached")
+        file = await context.bot.get_file(media.file_id)
+        suffix = _media_suffix(message)
+        path = Path(workdir) / f"input{suffix}"
+        await file.download_to_drive(custom_path=str(path))
+        return path
+
+    async def handle_media_url(update: Update, context: ContextTypes.DEFAULT_TYPE, url: str, operation: str | None = None) -> None:
+        message = update.message
+        if message is None:
+            return
+        await message.reply_text("⏳ بەدوای میدیا دەگەڕێم و دایدەگرم...")
+        try:
+            with tempfile.TemporaryDirectory(prefix="mrshaso_media_") as workdir:
+                downloaded = await asyncio.to_thread(_download_url_sync, url, workdir)
+                if operation:
+                    downloaded = await asyncio.to_thread(_convert_media_sync, downloaded, operation, workdir)
+                await send_media_file(message, context, downloaded, operation)
+        except Exception as exc:
+            logger.exception("Media URL processing failed for %s", url)
+            await message.reply_text(f"⚠️ نەتوانرا ئەم لینکە جێبەجێ بکرێت: {exc}")
+
+    async def handle_media_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        message = update.message
+        if message is None:
+            return
+        mode = context.user_data.get(MENU_MODE_KEY, "main")
+        if mode not in {"files:archive", "media:upload", "converter:mp3_voice", "converter:voice_mp3", "converter:video_mp3", "converter:video_voice"}:
+            return
+
+        try:
+            with tempfile.TemporaryDirectory(prefix="mrshaso_media_") as workdir:
+                source = await download_telegram_media(message, context, workdir)
+                if mode == "files:archive" or mode == "media:upload":
+                    await archive_media(message, message, source, context)
+                    await message.reply_text("✅ فایلەکە بە سەرکەوتوویی خراوەتە ناو ئەرشیفی media.")
+                    return
+                converted = await asyncio.to_thread(_convert_media_sync, source, mode.removeprefix("converter:"), workdir)
+                await send_media_file(message, context, converted, mode.removeprefix("converter:"))
+        except Exception as exc:
+            logger.exception("Telegram media processing failed")
+            await message.reply_text(f"⚠️ نەتوانرا فایلەکە جێبەجێ بکرێت: {exc}")
+
     async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if not is_private_chat(update) or update.message is None:
             return
@@ -889,6 +1052,12 @@ def create_application(settings: Settings) -> Application:
 
         chat = update.effective_chat
         is_group_chat = chat is not None and chat.type in {"group", "supergroup"}
+        mode = context.user_data.get(MENU_MODE_KEY, "main")
+        url = extract_media_url(text)
+        if not is_group_chat and url and (mode.startswith("media:") or mode.startswith("converter:")):
+            operation = mode.removeprefix("converter:") if mode.startswith("converter:") else None
+            await handle_media_url(update, context, url, operation)
+            return
         if not is_group_chat and is_identity_question(text):
             await update.message.reply_text(identity_response(text))
             return
@@ -1104,6 +1273,12 @@ def create_application(settings: Settings) -> Application:
         group=-2,
     )
     application.add_handler(MessageHandler(filters.ALL, track_group_message), group=-1)
+    application.add_handler(
+        MessageHandler(
+            filters.AUDIO | filters.VOICE | filters.VIDEO | filters.VIDEO_NOTE | filters.Document.ALL,
+            handle_media_message,
+        )
+    )
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     return application

@@ -11,6 +11,9 @@ A professional Telegram AI bot built with Python, Telegram Bot API, and Gemini.
 - /clear resets conversation context
 - Natural-language conversation with Gemini for normal messages
 - Optional Telegram API credentials support for advanced client features
+- Social-media downloads through `yt-dlp`
+- MP3/voice/video conversion through `ffmpeg`
+- Downloaded media is sent as audio, voice, or video and archived locally in `media_archive/`
 
 ## Setup
 
@@ -21,6 +24,9 @@ A professional Telegram AI bot built with Python, Telegram Bot API, and Gemini.
    ```bash
    python -m pip install -r requirements.txt
    ```
+
+   Install the `ffmpeg` executable separately and make sure it is available on `PATH`.
+   Set `ARCHIVE_CHAT_ID` to a private channel/group ID if you also want Telegram-side archiving.
 
 4. Run the bot:
 

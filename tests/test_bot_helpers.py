@@ -1,11 +1,18 @@
 import unittest
 from types import SimpleNamespace
 
-from app.bot import build_main_menu, identity_response, is_identity_question, should_answer_identity
+from app.bot import build_main_menu, extract_media_url, identity_response, is_identity_question, should_answer_identity
 from app.gemini_client import GeminiClient
 
 
 class GeminiClientTests(unittest.TestCase):
+    def test_extract_media_url_ignores_trailing_punctuation(self):
+        self.assertEqual(
+            extract_media_url("download https://example.com/video?id=1."),
+            "https://example.com/video?id=1",
+        )
+        self.assertIsNone(extract_media_url("this is not a link"))
+
     def test_main_menu_exposes_all_requested_actions(self):
         callbacks = {
             button.callback_data
