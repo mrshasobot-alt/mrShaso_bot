@@ -1,11 +1,28 @@
 import unittest
 from types import SimpleNamespace
 
-from app.bot import identity_response, is_identity_question, should_answer_identity
+from app.bot import build_main_menu, identity_response, is_identity_question, should_answer_identity
 from app.gemini_client import GeminiClient
 
 
 class GeminiClientTests(unittest.TestCase):
+    def test_main_menu_exposes_all_requested_actions(self):
+        callbacks = {
+            button.callback_data
+            for row in build_main_menu("kurdish").inline_keyboard
+            for button in row
+            if button.callback_data
+        }
+        self.assertTrue({
+            "language:kurdish", "language:persian", "language:arabic",
+            "language:english", "language:turkish", "menu:chat",
+            "menu:converter:mp3_voice", "menu:converter:voice_mp3",
+            "menu:converter:video_mp3", "menu:converter:video_voice",
+            "menu:media:facebook", "menu:media:tiktok",
+            "menu:media:instagram", "menu:media:snapchat",
+            "menu:media:upload", "menu:files:archive", "menu:main",
+        }.issubset(callbacks))
+
     def test_identity_keywords_cover_requested_languages(self):
         for question in ["اصل بده", "ناسنامە", "عرفني", "who are you", "adın ne"]:
             self.assertTrue(is_identity_question(question), msg=question)

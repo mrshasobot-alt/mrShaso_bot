@@ -41,6 +41,44 @@ MENU_TEXT = {
     "turkish": {"title": "🦋 MrShaso Ana Menü", "language": "🌐 Dil", "chat": "💬 Sohbet", "converter": "🛠️ Dönüştürücü", "media": "Medya bağlantısı indirici", "files": "📁 Dosyalar", "refresh": "🔄 Menüyü yenile", "back": "🔙 Ana menüye dön", "choose": "Bir bölüm seçin:", "language_chosen": "Dil seçildi: Türkçe"},
 }
 
+MENU_ACTION_TEXT = {
+    "kurdish": {
+        "mp3_voice": "🎵 MP3 → Voice", "voice_mp3": "🎙️ Voice → MP3",
+        "video_mp3": "🎬 Video → MP3", "video_voice": "📹 Video → Voice",
+        "facebook": "📘 فەیسبووک", "tiktok": "🎵 تیک تۆک",
+        "instagram": "📸 اینستاگرام", "snapchat": "👻 سناپ چات",
+        "social_files": "📱 فایلەکانی سۆشیال میدیا", "archive": "📁 دروستکردنی ئەرشیف",
+    },
+    "persian": {
+        "mp3_voice": "🎵 MP3 → صدا", "voice_mp3": "🎙️ صدا → MP3",
+        "video_mp3": "🎬 ویدیو → MP3", "video_voice": "📹 ویدیو → صدا",
+        "facebook": "📘 فیسبوک", "tiktok": "🎵 تیک‌تاک",
+        "instagram": "📸 اینستاگرام", "snapchat": "👻 اسنپ‌چت",
+        "social_files": "📱 فایل‌های شبکه‌های اجتماعی", "archive": "📁 ساخت آرشیو",
+    },
+    "arabic": {
+        "mp3_voice": "🎵 MP3 ← صوت", "voice_mp3": "🎙️ صوت ← MP3",
+        "video_mp3": "🎬 فيديو ← MP3", "video_voice": "📹 فيديو ← صوت",
+        "facebook": "📘 فيسبوك", "tiktok": "🎵 تيك توك",
+        "instagram": "📸 إنستغرام", "snapchat": "👻 سناب شات",
+        "social_files": "📱 ملفات التواصل الاجتماعي", "archive": "📁 إنشاء أرشيف",
+    },
+    "english": {
+        "mp3_voice": "🎵 MP3 → Voice", "voice_mp3": "🎙️ Voice → MP3",
+        "video_mp3": "🎬 Video → MP3", "video_voice": "📹 Video → Voice",
+        "facebook": "📘 Facebook", "tiktok": "🎵 TikTok",
+        "instagram": "📸 Instagram", "snapchat": "👻 Snapchat",
+        "social_files": "📱 Social media files", "archive": "📁 Create archive",
+    },
+    "turkish": {
+        "mp3_voice": "🎵 MP3 → Ses", "voice_mp3": "🎙️ Ses → MP3",
+        "video_mp3": "🎬 Video → MP3", "video_voice": "📹 Video → Ses",
+        "facebook": "📘 Facebook", "tiktok": "🎵 TikTok",
+        "instagram": "📸 Instagram", "snapchat": "👻 Snapchat",
+        "social_files": "📱 Sosyal medya dosyaları", "archive": "📁 Arşiv oluştur",
+    },
+}
+
 
 def _menu_language(language: str | None) -> str:
     return language if language in MENU_TEXT else "kurdish"
@@ -52,6 +90,7 @@ def build_back_button(language: str) -> list[InlineKeyboardButton]:
 
 def build_main_menu(language: str = "kurdish") -> InlineKeyboardMarkup:
     labels = MENU_TEXT[_menu_language(language)]
+    actions = MENU_ACTION_TEXT[_menu_language(language)]
     language_buttons = [InlineKeyboardButton(label, callback_data=f"language:{code}") for label, code in LANGUAGE_OPTIONS]
     return InlineKeyboardMarkup([
         [InlineKeyboardButton(labels["language"], callback_data="menu:language")],
@@ -59,8 +98,13 @@ def build_main_menu(language: str = "kurdish") -> InlineKeyboardMarkup:
         language_buttons[3:],
         [InlineKeyboardButton(labels["chat"], callback_data="menu:chat")],
         [InlineKeyboardButton(f"─── {labels['converter']} ───", callback_data="menu:converter")],
-        [InlineKeyboardButton(labels["media"], callback_data="menu:media")],
-        [InlineKeyboardButton(labels["files"], callback_data="menu:files")],
+        [InlineKeyboardButton(actions["mp3_voice"], callback_data="menu:converter:mp3_voice"), InlineKeyboardButton(actions["voice_mp3"], callback_data="menu:converter:voice_mp3")],
+        [InlineKeyboardButton(actions["video_mp3"], callback_data="menu:converter:video_mp3"), InlineKeyboardButton(actions["video_voice"], callback_data="menu:converter:video_voice")],
+        [InlineKeyboardButton(f"─── {labels['media']} ───", callback_data="menu:media")],
+        [InlineKeyboardButton(actions["facebook"], callback_data="menu:media:facebook"), InlineKeyboardButton(actions["tiktok"], callback_data="menu:media:tiktok")],
+        [InlineKeyboardButton(actions["instagram"], callback_data="menu:media:instagram"), InlineKeyboardButton(actions["snapchat"], callback_data="menu:media:snapchat")],
+        [InlineKeyboardButton(actions["social_files"], callback_data="menu:media:upload")],
+        [InlineKeyboardButton(actions["archive"], callback_data="menu:files:archive")],
         [InlineKeyboardButton(labels["refresh"], callback_data="menu:main")],
     ])
 
