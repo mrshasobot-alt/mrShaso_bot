@@ -441,7 +441,10 @@ def create_application(settings: Settings) -> Application:
             return
 
         for member in message.new_chat_members or []:
-            member_name = f"@{member.username}" if member.username else member.first_name
+            full_name = " ".join(
+                part for part in (member.first_name, member.last_name) if part
+            )
+            member_name = f"@{member.username}" if member.username else full_name
             await context.bot.send_message(
                 chat_id=chat.id,
                 text=f"🌟 بەخێربێیت {member_name}! خۆشحاڵین بە هاتنت بۆ گرووپەکەمان. 🌟",
