@@ -50,6 +50,29 @@ LANGUAGE_OPTIONS = (
     ("Türkçe", "turkish"),
 )
 
+LANGUAGE_BUTTON_TEXT = {
+    "kurdish": {
+        "kurdish": "کوردی", "persian": "فارسی", "arabic": "عەرەبی",
+        "english": "ئینگلیزی", "turkish": "تورکی",
+    },
+    "persian": {
+        "kurdish": "کردی", "persian": "فارسی", "arabic": "عربی",
+        "english": "انگلیسی", "turkish": "ترکی",
+    },
+    "arabic": {
+        "kurdish": "الكردية", "persian": "الفارسية", "arabic": "العربية",
+        "english": "الإنجليزية", "turkish": "التركية",
+    },
+    "english": {
+        "kurdish": "Kurdish", "persian": "Persian", "arabic": "Arabic",
+        "english": "English", "turkish": "Turkish",
+    },
+    "turkish": {
+        "kurdish": "Kürtçe", "persian": "Farsça", "arabic": "Arapça",
+        "english": "İngilizce", "turkish": "Türkçe",
+    },
+}
+
 MENU_TEXT = {
     "kurdish": {"title": "🦋 مینیوی سەرەکی MrShaso", "language": "🌐 زمان", "chat": "💬 چات / گفتوگۆ", "converter": "🛠️ کۆنفێرتەر", "media": "داگرتنی لێنکی میدیا", "social_files": "فایلەکانی سۆشیال میدیا", "refresh": "🔄 نوێکردنەوەی menu", "back": "🔙 گەڕانەوە بۆ پەڕەی سەرەکی", "choose": "تکایە بەشێک هەڵبژێرە:", "language_chosen": "زمان هەڵبژێردرا: کوردی", "converter_prompt": "📥 تکایە فایلەکە بنێرە بۆ دەستپێکردنی گۆڕین.", "media_prompt": "🔗 تکایە لینکی میدیا بنێرە یان فایلەکە ڕاستەوخۆ upload بکە."},
     "persian": {"title": "🦋 منوی اصلی MrShaso", "language": "🌐 زبان", "chat": "💬 گفتگو", "converter": "🛠️ تبدیل‌کننده", "media": "دانلود لینک رسانه", "social_files": "فایل‌های شبکه‌های اجتماعی", "refresh": "🔄 تازه‌سازی منو", "back": "🔙 بازگشت به منوی اصلی", "choose": "یک بخش را انتخاب کنید:", "language_chosen": "زبان انتخاب شد: فارسی", "converter_prompt": "📥 لطفاً فایل را برای تبدیل ارسال کنید.", "media_prompt": "🔗 لطفاً لینک رسانه یا فایل را ارسال کنید."},
@@ -126,9 +149,14 @@ def build_section_header(label: str, section: str) -> list[InlineKeyboardButton]
 
 
 def build_main_menu(language: str = "kurdish") -> InlineKeyboardMarkup:
-    labels = MENU_TEXT[_menu_language(language)]
-    actions = MENU_ACTION_TEXT[_menu_language(language)]
-    language_buttons = [InlineKeyboardButton(label, callback_data=f"language:{code}") for label, code in LANGUAGE_OPTIONS]
+    selected_language = _menu_language(language)
+    labels = MENU_TEXT[selected_language]
+    actions = MENU_ACTION_TEXT[selected_language]
+    translated_languages = LANGUAGE_BUTTON_TEXT[selected_language]
+    language_buttons = [
+        InlineKeyboardButton(translated_languages[code], callback_data=f"language:{code}")
+        for _, code in LANGUAGE_OPTIONS
+    ]
     return InlineKeyboardMarkup([
         build_section_header(labels["language"], "language"),
         language_buttons[:3],
@@ -150,8 +178,13 @@ def main_menu_text(language: str = "kurdish") -> str:
 
 
 def build_language_menu(language: str = "kurdish") -> InlineKeyboardMarkup:
-    keyboard = [[InlineKeyboardButton(label, callback_data=f"language:{language}")] for label, language in LANGUAGE_OPTIONS]
-    keyboard.append(build_back_button(language))
+    selected_language = _menu_language(language)
+    translated_labels = LANGUAGE_BUTTON_TEXT[selected_language]
+    keyboard = [
+        [InlineKeyboardButton(translated_labels[code], callback_data=f"language:{code}")]
+        for _, code in LANGUAGE_OPTIONS
+    ]
+    keyboard.append(build_back_button(selected_language))
     return InlineKeyboardMarkup(keyboard)
 
 

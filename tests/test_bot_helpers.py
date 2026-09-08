@@ -5,6 +5,7 @@ from app.bot import (
     SUPPORTED_CONVERSION_OPERATIONS,
     build_main_menu,
     build_converter_menu,
+    build_language_menu,
     build_media_menu,
     extract_media_url,
     identity_response,
@@ -17,6 +18,26 @@ from app.gemini_client import GeminiClient
 
 
 class GeminiClientTests(unittest.TestCase):
+    def test_language_buttons_are_translated_for_selected_language(self):
+        expected = {
+            "english": {"Kurdish", "Persian", "Arabic", "English", "Turkish"},
+            "arabic": {"الكردية", "الفارسية", "العربية", "الإنجليزية", "التركية"},
+            "turkish": {"Kürtçe", "Farsça", "Arapça", "İngilizce", "Türkçe"},
+        }
+        for language, labels in expected.items():
+            main_labels = {
+                button.text
+                for row in build_main_menu(language).inline_keyboard
+                for button in row
+            }
+            language_labels = {
+                button.text
+                for row in build_language_menu(language).inline_keyboard
+                for button in row
+            }
+            self.assertTrue(labels.issubset(main_labels))
+            self.assertTrue(labels.issubset(language_labels))
+
     def test_converter_and_media_menus_are_localized(self):
         expected_labels = {
             "kurdish": "MP3 → Voice",
