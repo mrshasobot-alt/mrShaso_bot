@@ -7,6 +7,7 @@ from telegram import ChatPermissions, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Application,
     CallbackQueryHandler,
+    ChatMemberHandler,
     CommandHandler,
     ContextTypes,
     MessageHandler,
@@ -566,6 +567,34 @@ def create_application(settings: Settings) -> Application:
                 text=f"🌟 بەخێربێیت {member_name}! خۆشحاڵین بە هاتنت بۆ گرووپەکەمان. 🌟",
             )
 
+    async def handle_bot_promotion(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        chat_member_update = update.my_chat_member
+        chat = update.effective_chat
+        if not chat_member_update or not chat or chat.type not in {"group", "supergroup"}:
+            return
+
+        old_status = chat_member_update.old_chat_member.status
+        new_status = chat_member_update.new_chat_member.status
+        if new_status != "administrator" or old_status == "administrator":
+            return
+
+        promoter = chat_member_update.from_user
+        promoter_name = (
+            f"@{promoter.username}"
+            if promoter.username
+            else " ".join(
+                part for part in (promoter.first_name, promoter.last_name) if part
+            )
+        )
+        await context.bot.send_message(
+            chat_id=chat.id,
+            text=(
+                f"✨ سوپاس بۆ {promoter_name}! ✨\n\n"
+                "بە خۆشحاڵییەوە بۆتەکەت کرد بە ئەدمینی گرووپ. "
+                "ئێستا ئامادەم بۆ یارمەتیدان و ڕێکخستنی گرووپەکەمان. 🤖🌟"
+            ),
+        )
+
     async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if update is None or context is None:
             return
@@ -778,6 +807,10 @@ def create_application(settings: Settings) -> Application:
             filters.StatusUpdate.NEW_CHAT_MEMBERS | filters.StatusUpdate.LEFT_CHAT_MEMBER,
             handle_group_member_update,
         ),
+        group=-2,
+    )
+    application.add_handler(
+        ChatMemberHandler(handle_bot_promotion, ChatMemberHandler.MY_CHAT_MEMBER),
         group=-2,
     )
     application.add_handler(MessageHandler(filters.ALL, track_group_message), group=-1)
