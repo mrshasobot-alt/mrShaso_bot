@@ -146,7 +146,7 @@ def build_main_menu(language: str = "kurdish") -> InlineKeyboardMarkup:
 
 
 def main_menu_text(language: str = "kurdish") -> str:
-    return "🦋𝄟⃝ ᴠͥɪͣᴘͫ ｍｒＳｈａ"
+    return "🦋𝄟⃝ ᴠͥɪͣᴘͫ Ｓｈａ"
 
 
 def build_language_menu(language: str = "kurdish") -> InlineKeyboardMarkup:
