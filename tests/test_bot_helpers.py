@@ -8,6 +8,7 @@ from app.bot import (
     identity_response,
     is_identity_question,
     media_url_matches_mode,
+    social_media_kind,
     should_answer_identity,
 )
 from app.gemini_client import GeminiClient
@@ -52,6 +53,14 @@ class GeminiClientTests(unittest.TestCase):
             SUPPORTED_CONVERSION_OPERATIONS,
             {"mp3_voice", "voice_mp3", "video_mp3", "video_voice"},
         )
+
+    def test_social_media_gallery_accepts_only_media_types(self):
+        from pathlib import Path
+
+        self.assertEqual(social_media_kind(Path("track.mp3")), "audio")
+        self.assertEqual(social_media_kind(Path("clip.ogg")), "voice")
+        self.assertEqual(social_media_kind(Path("video.mp4")), "video")
+        self.assertIsNone(social_media_kind(Path("file.pdf")))
 
     def test_identity_keywords_cover_requested_languages(self):
         for question in ["اصل بده", "ناسنامە", "عرفني", "who are you", "adın ne"]:

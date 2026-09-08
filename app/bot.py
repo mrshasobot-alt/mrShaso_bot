@@ -33,6 +33,9 @@ SOCIAL_MEDIA_DIRECTORY = Path("social_media_files")
 SUPPORTED_CONVERSION_OPERATIONS = frozenset({
     "mp3_voice", "voice_mp3", "video_mp3", "video_voice",
 })
+SOCIAL_AUDIO_SUFFIXES = frozenset({".mp3", ".m4a", ".wav", ".flac"})
+SOCIAL_VOICE_SUFFIXES = frozenset({".ogg"})
+SOCIAL_VIDEO_SUFFIXES = frozenset({".mp4", ".mkv", ".webm", ".mov", ".avi"})
 
 BOT_PROFILE_NAME = "🦋𝄟⃝ ᴠͥɪͣᴘͫ Ｓｈａ"
 START_MESSAGE_DELETE_DELAY = 30
@@ -348,6 +351,17 @@ def media_url_matches_mode(url: str, mode: str) -> bool:
     if not mode.startswith("media:"):
         return False
     return detect_media_platform(url) == mode.removeprefix("media:")
+
+
+def social_media_kind(path: Path) -> str | None:
+    suffix = path.suffix.lower()
+    if suffix in SOCIAL_AUDIO_SUFFIXES:
+        return "audio"
+    if suffix in SOCIAL_VOICE_SUFFIXES:
+        return "voice"
+    if suffix in SOCIAL_VIDEO_SUFFIXES:
+        return "video"
+    return None
 
 
 def _download_url_sync(url: str, workdir: str) -> Path:
@@ -805,6 +819,23 @@ def create_application(settings: Settings) -> Application:
             logger.exception("Telegram media processing failed")
             await message.reply_text(f"⚠️ نەتوانرا فایلەکە جێبەجێ بکرێت: {exc}")
 
+    async def send_social_media_gallery(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> None:
+        if not SOCIAL_MEDIA_DIRECTORY.exists():
+            return
+        for path in sorted(SOCIAL_MEDIA_DIRECTORY.iterdir(), key=lambda item: item.name.lower()):
+            if not path.is_file():
+                continue
+            media_kind = social_media_kind(path)
+            try:
+                if media_kind == "audio":
+                    await context.bot.send_audio(chat_id=chat_id, audio=str(path))
+                elif media_kind == "voice":
+                    await context.bot.send_voice(chat_id=chat_id, voice=str(path))
+                elif media_kind == "video":
+                    await context.bot.send_video(chat_id=chat_id, video=str(path), supports_streaming=True)
+            except Exception:
+                logger.warning("Could not send social media library item %s", path, exc_info=True)
+
     async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if not is_private_chat(update) or update.message is None:
             return
@@ -851,6 +882,12 @@ def create_application(settings: Settings) -> Application:
             context.user_data[MENU_MODE_KEY] = "media"
             await query.answer()
             await query.edit_message_text(f"{labels['media']}\n\n{labels['choose']}", reply_markup=build_media_menu(language))
+            return
+        if data == "menu:media:upload":
+            context.user_data[MENU_MODE_KEY] = "media:upload"
+            await query.answer()
+            if query.message is not None:
+                await send_social_media_gallery(query.message.chat_id, context)
             return
         if data.startswith("menu:converter:"):
             context.user_data[MENU_MODE_KEY] = data.removeprefix("menu:")
