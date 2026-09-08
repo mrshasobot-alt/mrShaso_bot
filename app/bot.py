@@ -116,8 +116,7 @@ def build_main_menu(language: str = "kurdish") -> InlineKeyboardMarkup:
 
 
 def main_menu_text(language: str = "kurdish") -> str:
-    labels = MENU_TEXT[_menu_language(language)]
-    return f"{labels['title']}\n\n{labels['choose']}"
+    return "\u2063"
 
 
 def build_language_menu(language: str = "kurdish") -> InlineKeyboardMarkup:
