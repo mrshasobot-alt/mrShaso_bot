@@ -1,11 +1,22 @@
 import unittest
 from types import SimpleNamespace
 
-from app.bot import should_answer_identity
+from app.bot import identity_response, is_identity_question, should_answer_identity
 from app.gemini_client import GeminiClient
 
 
 class GeminiClientTests(unittest.TestCase):
+    def test_identity_keywords_cover_requested_languages(self):
+        for question in ["اصل بده", "ناسنامە", "عرفني", "who are you", "adın ne"]:
+            self.assertTrue(is_identity_question(question), msg=question)
+
+    def test_identity_response_is_localized(self):
+        self.assertIn("سن من", identity_response("اصل بده"))
+        self.assertIn("تەمەنم", identity_response("ناسنامە"))
+        self.assertIn("عمري", identity_response("عرفني"))
+        self.assertIn("I am 36", identity_response("who are you"))
+        self.assertIn("yaşındayım", identity_response("adın ne"))
+
     def test_identity_question_is_allowed_in_private_chat(self):
         update = SimpleNamespace(
             effective_chat=SimpleNamespace(type="private"),

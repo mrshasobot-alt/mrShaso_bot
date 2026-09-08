@@ -166,6 +166,14 @@ IDENTITY_RESPONSE = (
     "تەمەنم 36 ساڵە خەڵکی کوردستانم"
 )
 
+IDENTITY_RESPONSES = {
+    "persian": "🦋𝄟⃝ ᴠͥɪͣᴘͫ ᴍʀꜱʜᴀsᴏ\n@mrShaso\nسن من ۳۶ سال است و اهل کردستان هستم",
+    "kurdish": "🦋𝄟⃝ ᴠͥɪͣᴘͫ ᴍʀꜱʜᴀsᴏ\n@mrShaso\nتەمەنم 36 ساڵە خەڵکی کوردستانم",
+    "arabic": "🦋𝄟⃝ ᴠͥɪͣᴘͫ ᴍʀꜱʜᴀsᴏ\n@mrShaso\nعمري 36 سنة وأنا من كردستان",
+    "english": "🦋𝄟⃝ ᴠͥɪͣᴘͫ ᴍʀꜱʜᴀsᴏ\n@mrShaso\nI am 36 years old and I am from Kurdistan",
+    "turkish": "🦋𝄟⃝ ᴠͥɪͣᴘͫ ᴍʀꜱʜᴀsᴏ\n@mrShaso\n36 yaşındayım ve Kürdistanlıyım",
+}
+
 
 def is_identity_question(text: str) -> bool:
     normalized = normalize_text(text)
@@ -184,6 +192,11 @@ def is_identity_question(text: str) -> bool:
         "kendini tanit", "nerelisin",
         "what is your name", "what's your name", "who are you",
         "introduce yourself", "tell me about yourself", "where are you from",
+        "اصل بده", "اصل میدی", "معرفی میکنی", "سن", "کجا زندگی",
+        "ناسنامە", "تەمەن", "چەند ساڵتە", "خەڵکی کوێی",
+        "عرفني", "كم عمرك", "اصلك", "معرفة",
+        "how old are you", "bio", "kendini tanıt", "kaç yaşındasın",
+        "nerelisin", "adın ne",
     }
     if normalized in identity_phrases:
         return True
@@ -194,8 +207,26 @@ def is_identity_question(text: str) -> bool:
         "ما اسمك", "عرف نفسك", "adın ne", "adin ne", "sen kimsin",
         "what is your name", "what's your name", "who are you",
         "introduce yourself",
+        "اصل", "معرفی", "سن", "کجا زندگی", "ناسنامە", "تەمەن",
+        "عرفني", "كم عمرك", "اصلك", "معرفة", "how old are you", "bio",
+        "kendini tanıt", "kaç yaşındasın", "nerelisin", "adın ne",
     )
     return any(marker in normalized for marker in identity_markers)
+
+
+def identity_response(text: str) -> str:
+    normalized = normalize_text(text)
+    if any(keyword in normalized for keyword in ("خۆت بناسێن", "ناسنامە", "تەمەن", "چەند ساڵ", "خەڵکی کوێ")):
+        language = "kurdish"
+    elif any(keyword in normalized for keyword in ("عرفني", "من أنت", "كم عمرك", "اصلك", "معرفة")):
+        language = "arabic"
+    elif any(keyword in normalized for keyword in ("kendini tanıt", "kaç yaşındasın", "nerelisin", "adın ne")):
+        language = "turkish"
+    elif any(keyword in normalized.split() for keyword in ("اصل", "معرفی", "سن")) or any(keyword in normalized for keyword in ("کجا زندگی", "اسم شما")):
+        language = "persian"
+    else:
+        language = detect_response_language(text)
+    return IDENTITY_RESPONSES.get(language, IDENTITY_RESPONSE)
 
 
 def should_answer_identity(update: Update, bot_user_id: int | None) -> bool:
@@ -652,7 +683,7 @@ def create_application(settings: Settings) -> Application:
 
         question = " ".join(context.args)
         if is_private_chat(update) and is_identity_question(question):
-            await update.message.reply_text(IDENTITY_RESPONSE)
+            await update.message.reply_text(identity_response(question))
             return
 
         await update.message.reply_text("Thinking...")
@@ -810,7 +841,7 @@ def create_application(settings: Settings) -> Application:
         chat = update.effective_chat
         is_group_chat = chat is not None and chat.type in {"group", "supergroup"}
         if not is_group_chat and is_identity_question(text):
-            await update.message.reply_text(IDENTITY_RESPONSE)
+            await update.message.reply_text(identity_response(text))
             return
         if not is_group_chat and context.user_data.get(MENU_MODE_KEY, "main") != "chat":
             language = context.user_data.get(SELECTED_LANGUAGE_KEY, "kurdish")
@@ -937,7 +968,7 @@ def create_application(settings: Settings) -> Application:
                 return
 
             if should_answer_identity(update, context.bot.id):
-                await update.message.reply_text(IDENTITY_RESPONSE)
+                await update.message.reply_text(identity_response(text))
                 return
 
             if reply_target and is_reply_to_bot_message(reply_target, context.bot.id):
@@ -973,7 +1004,7 @@ def create_application(settings: Settings) -> Application:
                 return
 
         if should_answer_identity(update, context.bot.id):
-            await update.message.reply_text(IDENTITY_RESPONSE)
+            await update.message.reply_text(identity_response(text))
             return
 
         greeting_language = detect_greeting_language(text)
