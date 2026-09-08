@@ -42,7 +42,7 @@ def build_language_menu() -> InlineKeyboardMarkup:
 
 
 def language_menu_text() -> str:
-    return "──────────\n🌐 Language / Ziman\n──────────"
+    return "──────────\n🌐 Language / زمان\n──────────"
 
 
 def build_selected_language_instruction(language: str) -> str:
@@ -434,7 +434,8 @@ def create_application(settings: Settings) -> Application:
         context.user_data[SELECTED_LANGUAGE_KEY] = language
         await query.answer(f"{language_labels[language]} selected")
         await query.edit_message_text(
-            f"{language_menu_text()}\n\n✅ {language_labels[language]} هەڵبژێردرا."
+            language_menu_text(),
+            reply_markup=build_language_menu(),
         )
 
     async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
