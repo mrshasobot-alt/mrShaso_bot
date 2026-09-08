@@ -1,0 +1,1 @@
+"""MrShaso bot package."""

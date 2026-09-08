@@ -1,0 +1,4 @@
+python-dotenv>=1.0.1
+python-telegram-bot[job-queue]>=22.1
+google-genai>=1.0.0
+telethon>=1.38.0
