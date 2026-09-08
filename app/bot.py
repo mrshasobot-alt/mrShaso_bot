@@ -198,6 +198,19 @@ def is_identity_question(text: str) -> bool:
     return any(marker in normalized for marker in identity_markers)
 
 
+def should_answer_identity(update: Update, bot_user_id: int | None) -> bool:
+    """Allow identity replies privately or only when a group message replies to this bot."""
+    message = update.effective_message
+    chat = update.effective_chat
+    if message is None or chat is None or not message.text or not is_identity_question(message.text):
+        return False
+    if chat.type == "private":
+        return True
+    if chat.type not in {"group", "supergroup"} or bot_user_id is None:
+        return False
+    return is_reply_to_bot_message(message.reply_to_message, bot_user_id)
+
+
 def normalize_text(value: str) -> str:
     if not value:
         return ""
@@ -638,7 +651,7 @@ def create_application(settings: Settings) -> Application:
             return
 
         question = " ".join(context.args)
-        if is_identity_question(question):
+        if is_private_chat(update) and is_identity_question(question):
             await update.message.reply_text(IDENTITY_RESPONSE)
             return
 
@@ -796,6 +809,9 @@ def create_application(settings: Settings) -> Application:
 
         chat = update.effective_chat
         is_group_chat = chat is not None and chat.type in {"group", "supergroup"}
+        if not is_group_chat and is_identity_question(text):
+            await update.message.reply_text(IDENTITY_RESPONSE)
+            return
         if not is_group_chat and context.user_data.get(MENU_MODE_KEY, "main") != "chat":
             language = context.user_data.get(SELECTED_LANGUAGE_KEY, "kurdish")
             await update.message.reply_text(main_menu_text(language), reply_markup=build_main_menu(language))
@@ -920,7 +936,7 @@ def create_application(settings: Settings) -> Application:
                     await update.message.reply_text("⚠️ Failed to apply that moderation command.")
                 return
 
-            if is_identity_question(text):
+            if should_answer_identity(update, context.bot.id):
                 await update.message.reply_text(IDENTITY_RESPONSE)
                 return
 
@@ -956,7 +972,7 @@ def create_application(settings: Settings) -> Application:
                 await send_song_preview(update, query)
                 return
 
-        if is_identity_question(text):
+        if should_answer_identity(update, context.bot.id):
             await update.message.reply_text(IDENTITY_RESPONSE)
             return
 
