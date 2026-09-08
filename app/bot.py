@@ -46,6 +46,36 @@ def language_menu_text() -> str:
     return "──────────\n🌐 Language / زمان\n──────────"
 
 
+def detect_response_language(text: str) -> str:
+    normalized = normalize_text(text)
+    if not normalized:
+        return "english"
+
+    kurdish_markers = set("ڕڵۆێەئڤ")
+    persian_markers = set("پچژگ")
+    turkish_markers = set("ğışöü")
+    if any(character in normalized for character in kurdish_markers):
+        return "kurdish"
+    if any(character in normalized for character in persian_markers):
+        return "persian"
+    if any(character in normalized for character in turkish_markers):
+        return "turkish"
+
+    persian_words = {"سلام", "درود", "خوب", "چطور", "هستم", "فارسی", "ممنون"}
+    turkish_words = {"merhaba", "selam", "nasıl", "teşekkür", "türkçe", "misin"}
+    arabic_words = {"مرحبا", "أهلا", "اهلا", "كيف", "العربية", "شكرا"}
+    words = set(normalized.split())
+    if words & persian_words:
+        return "persian"
+    if words & turkish_words:
+        return "turkish"
+    if words & arabic_words:
+        return "arabic"
+    if re.search(r"[\u0600-\u06ff]", normalized):
+        return "arabic"
+    return "english"
+
+
 def build_selected_language_instruction(language: str) -> str:
     language_names = {
         "sorani": "Sorani Kurdish",
@@ -57,7 +87,16 @@ def build_selected_language_instruction(language: str) -> str:
     }
     base_language = "kurdish" if language in {"sorani", "kurmanji"} else language
     instruction = GeminiClient.build_system_prompt(base_language)
-    return f"{instruction} Always reply in {language_names.get(language, 'the selected language')}."
+    selected_name = language_names.get(language, "the detected language")
+    return (
+        f"{instruction} Reply ONLY in {selected_name}. Do not mix languages, translate, "
+        "or include explanations in any other language."
+    )
+
+
+def build_response_instruction(text: str, selected_language: str | None = None) -> str:
+    language = selected_language or detect_response_language(text)
+    return build_selected_language_instruction(language)
 
 
 def normalize_text(value: str) -> str:
@@ -451,11 +490,7 @@ def create_application(settings: Settings) -> Application:
         question = " ".join(context.args)
         await update.message.reply_text("Thinking...")
         selected_language = context.user_data.get(SELECTED_LANGUAGE_KEY)
-        system_instruction = (
-            build_selected_language_instruction(selected_language)
-            if selected_language
-            else None
-        )
+        system_instruction = build_response_instruction(question, selected_language)
         answer = gemini.ask(question, system_instruction=system_instruction)
         await update.message.reply_text(answer)
 
@@ -733,14 +768,9 @@ def create_application(settings: Settings) -> Application:
 
                 recent_history = chat_history[-12:]
                 prompt = "\n".join(f"User: {item['content']}" for item in recent_history)
-                detected_language = GeminiClient.detect_language(text)
 
                 selected_language = context.user_data.get(SELECTED_LANGUAGE_KEY)
-                system_instruction = (
-                    build_selected_language_instruction(selected_language)
-                    if selected_language
-                    else GeminiClient.build_system_prompt(detected_language)
-                )
+                system_instruction = build_response_instruction(text, selected_language)
                 answer = gemini.ask(prompt, system_instruction=system_instruction)
                 chat_history.append({"role": "assistant", "content": answer})
                 await update.message.reply_text(answer)
@@ -778,14 +808,9 @@ def create_application(settings: Settings) -> Application:
 
         recent_history = chat_history[-12:]
         prompt = "\n".join(f"User: {item['content']}" for item in recent_history)
-        detected_language = GeminiClient.detect_language(text)
 
         selected_language = context.user_data.get(SELECTED_LANGUAGE_KEY)
-        system_instruction = (
-            build_selected_language_instruction(selected_language)
-            if selected_language
-            else GeminiClient.build_system_prompt(detected_language)
-        )
+        system_instruction = build_response_instruction(text, selected_language)
         answer = gemini.ask(prompt, system_instruction=system_instruction)
 
         chat_history.append({"role": "assistant", "content": answer})
