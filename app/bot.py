@@ -335,6 +335,27 @@ def extract_media_url(text: str) -> str | None:
     return url if parsed.scheme in {"http", "https"} and parsed.netloc else None
 
 
+def detect_media_platform(url: str) -> str | None:
+    hostname = (urlparse(url).hostname or "").lower().removeprefix("www.")
+    if hostname == "tiktok.com" or hostname.endswith(".tiktok.com"):
+        return "tiktok"
+    if hostname in {"facebook.com", "fb.watch"} or hostname.endswith(".facebook.com"):
+        return "facebook"
+    if hostname == "instagram.com" or hostname.endswith(".instagram.com"):
+        return "instagram"
+    if hostname in {"snapchat.com", "snap.com"} or hostname.endswith(".snapchat.com"):
+        return "snapchat"
+    return None
+
+
+def media_url_matches_mode(url: str, mode: str) -> bool:
+    if mode == "media:upload":
+        return True
+    if not mode.startswith("media:"):
+        return False
+    return detect_media_platform(url) == mode.removeprefix("media:")
+
+
 def _download_url_sync(url: str, workdir: str) -> Path:
     try:
         import yt_dlp
@@ -1069,6 +1090,12 @@ def create_application(settings: Settings) -> Application:
         is_group_chat = chat is not None and chat.type in {"group", "supergroup"}
         mode = context.user_data.get(MENU_MODE_KEY, "main")
         url = extract_media_url(text)
+        if not is_group_chat and url and mode.startswith("media:") and not media_url_matches_mode(url, mode):
+            platform = detect_media_platform(url)
+            await update.message.reply_text(
+                f"⚠️ ئەم لینکە هی بەشی {platform or 'ئەم بەشە'} نییە. تکایە لە مینیوی تایبەتی خۆیدا دایدەبەزێنە."
+            )
+            return
         if not is_group_chat and url and (mode.startswith("media:") or mode.startswith("converter:")):
             operation = mode.removeprefix("converter:") if mode.startswith("converter:") else None
             await handle_media_url(update, context, url, operation)

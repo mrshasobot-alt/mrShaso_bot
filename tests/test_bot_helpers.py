@@ -1,7 +1,14 @@
 import unittest
 from types import SimpleNamespace
 
-from app.bot import build_main_menu, extract_media_url, identity_response, is_identity_question, should_answer_identity
+from app.bot import (
+    build_main_menu,
+    extract_media_url,
+    identity_response,
+    is_identity_question,
+    media_url_matches_mode,
+    should_answer_identity,
+)
 from app.gemini_client import GeminiClient
 
 
@@ -12,6 +19,13 @@ class GeminiClientTests(unittest.TestCase):
             "https://example.com/video?id=1",
         )
         self.assertIsNone(extract_media_url("this is not a link"))
+
+    def test_social_media_urls_only_match_their_own_section(self):
+        self.assertTrue(media_url_matches_mode("https://www.tiktok.com/@user/video/1", "media:tiktok"))
+        self.assertFalse(media_url_matches_mode("https://www.tiktok.com/@user/video/1", "media:facebook"))
+        self.assertTrue(media_url_matches_mode("https://www.instagram.com/reel/1", "media:instagram"))
+        self.assertFalse(media_url_matches_mode("https://www.instagram.com/reel/1", "media:snapchat"))
+        self.assertTrue(media_url_matches_mode("https://example.com/media", "media:upload"))
 
     def test_main_menu_exposes_all_requested_actions(self):
         callbacks = {
