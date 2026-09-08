@@ -3,16 +3,59 @@ from __future__ import annotations
 import logging
 import re
 
-from telegram import ChatPermissions, Update
-from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
+from telegram import ChatPermissions, InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.ext import (
+    Application,
+    CallbackQueryHandler,
+    CommandHandler,
+    ContextTypes,
+    MessageHandler,
+    filters,
+)
 
 from app.config import Settings
 from app.gemini_client import GeminiClient
 
 logger = logging.getLogger(__name__)
 
-BOT_PROFILE_NAME = "🦋𝄟⃝ ᴠ‌ɪ‌ᴘ‌ Ｓｈａ"
+BOT_PROFILE_NAME = "🦋𝄟⃝ ᴠͥɪͣᴘͫ Ｓｈａ"
 START_MESSAGE_DELETE_DELAY = 5
+SELECTED_LANGUAGE_KEY = "selected_language"
+
+LANGUAGE_OPTIONS = (
+    ("کوردیی سۆرانی", "sorani"),
+    ("کوردیی کرمانجی", "kurmanji"),
+    ("فارسی", "persian"),
+    ("عەرەبی", "arabic"),
+    ("تورکی", "turkish"),
+    ("English", "english"),
+)
+
+
+def build_language_menu() -> InlineKeyboardMarkup:
+    keyboard = [
+        [InlineKeyboardButton(label, callback_data=f"language:{language}")]
+        for label, language in LANGUAGE_OPTIONS
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+
+def language_menu_text() -> str:
+    return "──────────\n🌐 Language / Ziman\n──────────"
+
+
+def build_selected_language_instruction(language: str) -> str:
+    language_names = {
+        "sorani": "Sorani Kurdish",
+        "kurmanji": "Kurmanji Kurdish",
+        "persian": "Persian",
+        "arabic": "Arabic",
+        "turkish": "Turkish",
+        "english": "English",
+    }
+    base_language = "kurdish" if language in {"sorani", "kurmanji"} else language
+    instruction = GeminiClient.build_system_prompt(base_language)
+    return f"{instruction} Always reply in {language_names.get(language, 'the selected language')}."
 
 
 def normalize_text(value: str) -> str:
@@ -358,6 +401,23 @@ def create_application(settings: Settings) -> Application:
                 data={"chat_id": response.chat_id, "message_id": response.message_id},
             )
 
+    async def select_language(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        query = update.callback_query
+        if query is None or not is_private_chat(update):
+            return
+
+        language = (query.data or "").removeprefix("language:")
+        if language not in {value for _, value in LANGUAGE_OPTIONS}:
+            await query.answer()
+            return
+
+        context.user_data[SELECTED_LANGUAGE_KEY] = language
+        selected_label = dict((value, label) for label, value in LANGUAGE_OPTIONS)[language]
+        await query.answer(f"{selected_label} selected")
+        await query.edit_message_text(
+            f"{language_menu_text()}\n\n✅ {selected_label} هەڵبژێردرا."
+        )
+
     async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if update.message is not None:
             await update.message.reply_text(build_command_guide())
@@ -369,7 +429,13 @@ def create_application(settings: Settings) -> Application:
 
         question = " ".join(context.args)
         await update.message.reply_text("Thinking...")
-        answer = gemini.ask(question)
+        selected_language = context.user_data.get(SELECTED_LANGUAGE_KEY)
+        system_instruction = (
+            build_selected_language_instruction(selected_language)
+            if selected_language
+            else None
+        )
+        answer = gemini.ask(question, system_instruction=system_instruction)
         await update.message.reply_text(answer)
 
     async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -381,13 +447,11 @@ def create_application(settings: Settings) -> Application:
         )
 
     async def language_info(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        if not is_private_chat(update) or update.message is None:
+            return
         await update.message.reply_text(
-            "Supported languages include:\n"
-            "- Arabic\n"
-            "- Kurdish\n"
-            "- Persian\n"
-            "- English\n"
-            "- and many more languages depending on the prompt"
+            language_menu_text(),
+            reply_markup=build_language_menu(),
         )
 
     async def clear_context(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -611,7 +675,12 @@ def create_application(settings: Settings) -> Application:
         prompt = "\n".join(f"User: {item['content']}" for item in recent_history)
         detected_language = GeminiClient.detect_language(text)
 
-        system_instruction = GeminiClient.build_system_prompt(detected_language)
+        selected_language = context.user_data.get(SELECTED_LANGUAGE_KEY)
+        system_instruction = (
+            build_selected_language_instruction(selected_language)
+            if selected_language
+            else GeminiClient.build_system_prompt(detected_language)
+        )
         answer = gemini.ask(prompt, system_instruction=system_instruction)
 
         chat_history.append({"role": "assistant", "content": answer})
@@ -624,6 +693,9 @@ def create_application(settings: Settings) -> Application:
     application.add_handler(CommandHandler("status", status))
     application.add_handler(CommandHandler("language", language_info))
     application.add_handler(CommandHandler("clear", clear_context))
+    application.add_handler(
+        CallbackQueryHandler(select_language, pattern=r"^language:")
+    )
     application.add_handler(
         MessageHandler(
             filters.StatusUpdate.NEW_CHAT_MEMBERS | filters.StatusUpdate.LEFT_CHAT_MEMBER,
