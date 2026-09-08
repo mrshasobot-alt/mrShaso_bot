@@ -23,27 +23,87 @@ logger = logging.getLogger(__name__)
 BOT_PROFILE_NAME = "🦋𝄟⃝ ᴠͥɪͣᴘͫ Ｓｈａ"
 START_MESSAGE_DELETE_DELAY = 30
 SELECTED_LANGUAGE_KEY = "selected_language"
+MENU_MODE_KEY = "menu_mode"
 
 LANGUAGE_OPTIONS = (
-    ("کوردیی سۆرانی", "sorani"),
-    ("کوردیی کرمانجی", "kurmanji"),
+    ("کوردی", "kurdish"),
     ("فارسی", "persian"),
     ("عەرەبی", "arabic"),
-    ("تورکی", "turkish"),
     ("English", "english"),
+    ("Türkçe", "turkish"),
 )
 
+MENU_TEXT = {
+    "kurdish": {"title": "🦋 مینیوی سەرەکی MrShaso", "language": "🌐 زمان", "chat": "💬 چات / گفتوگۆ", "converter": "🛠️ کۆنفێرتەر", "media": "داگرتنی لێنکی میدیا", "files": "📁 فایلەکان", "refresh": "🔄 نوێکردنەوەی menu", "back": "🔙 گەڕانەوە بۆ پەڕەی سەرەکی", "choose": "تکایە بەشێک هەڵبژێرە:", "language_chosen": "زمان هەڵبژێردرا: کوردی"},
+    "persian": {"title": "🦋 منوی اصلی MrShaso", "language": "🌐 زبان", "chat": "💬 گفتگو", "converter": "🛠️ تبدیل‌کننده", "media": "دانلود لینک رسانه", "files": "📁 فایل‌ها", "refresh": "🔄 تازه‌سازی منو", "back": "🔙 بازگشت به منوی اصلی", "choose": "یک بخش را انتخاب کنید:", "language_chosen": "زبان انتخاب شد: فارسی"},
+    "arabic": {"title": "🦋 القائمة الرئيسية MrShaso", "language": "🌐 اللغة", "chat": "💬 الدردشة", "converter": "🛠️ المحوّل", "media": "تنزيل رابط الوسائط", "files": "📁 الملفات", "refresh": "🔄 تحديث القائمة", "back": "🔙 العودة إلى القائمة الرئيسية", "choose": "اختر قسمًا:", "language_chosen": "تم اختيار العربية"},
+    "english": {"title": "🦋 MrShaso Main Menu", "language": "🌐 Language", "chat": "💬 Chat", "converter": "🛠️ Converter", "media": "Media Link Downloader", "files": "📁 Files", "refresh": "🔄 Refresh menu", "back": "🔙 Back to Main Menu", "choose": "Choose a section:", "language_chosen": "Language selected: English"},
+    "turkish": {"title": "🦋 MrShaso Ana Menü", "language": "🌐 Dil", "chat": "💬 Sohbet", "converter": "🛠️ Dönüştürücü", "media": "Medya bağlantısı indirici", "files": "📁 Dosyalar", "refresh": "🔄 Menüyü yenile", "back": "🔙 Ana menüye dön", "choose": "Bir bölüm seçin:", "language_chosen": "Dil seçildi: Türkçe"},
+}
 
-def build_language_menu() -> InlineKeyboardMarkup:
-    keyboard = [
-        [InlineKeyboardButton(label, callback_data=f"language:{language}")]
-        for label, language in LANGUAGE_OPTIONS
-    ]
+
+def _menu_language(language: str | None) -> str:
+    return language if language in MENU_TEXT else "kurdish"
+
+
+def build_back_button(language: str) -> list[InlineKeyboardButton]:
+    return [InlineKeyboardButton(MENU_TEXT[_menu_language(language)]["back"], callback_data="menu:main")]
+
+
+def build_main_menu(language: str = "kurdish") -> InlineKeyboardMarkup:
+    labels = MENU_TEXT[_menu_language(language)]
+    language_buttons = [InlineKeyboardButton(label, callback_data=f"language:{code}") for label, code in LANGUAGE_OPTIONS]
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton(labels["language"], callback_data="menu:language")],
+        language_buttons[:3],
+        language_buttons[3:],
+        [InlineKeyboardButton(labels["chat"], callback_data="menu:chat")],
+        [InlineKeyboardButton(f"─── {labels['converter']} ───", callback_data="menu:converter")],
+        [InlineKeyboardButton(labels["media"], callback_data="menu:media")],
+        [InlineKeyboardButton(labels["files"], callback_data="menu:files")],
+        [InlineKeyboardButton(labels["refresh"], callback_data="menu:main")],
+    ])
+
+
+def main_menu_text(language: str = "kurdish") -> str:
+    labels = MENU_TEXT[_menu_language(language)]
+    return f"{labels['title']}\n\n{labels['choose']}"
+
+
+def build_language_menu(language: str = "kurdish") -> InlineKeyboardMarkup:
+    keyboard = [[InlineKeyboardButton(label, callback_data=f"language:{language}")] for label, language in LANGUAGE_OPTIONS]
+    keyboard.append(build_back_button(language))
     return InlineKeyboardMarkup(keyboard)
 
 
-def language_menu_text() -> str:
-    return "──────────\n🌐 Language / زمان\n──────────"
+def build_converter_menu(language: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("🎵 MP3 → Voice", callback_data="menu:converter:mp3_voice")],
+        [InlineKeyboardButton("🎙️ Voice → MP3", callback_data="menu:converter:voice_mp3")],
+        [InlineKeyboardButton("🎬 Video → MP3", callback_data="menu:converter:video_mp3")],
+        [InlineKeyboardButton("📹 Video → Voice", callback_data="menu:converter:video_voice")],
+        build_back_button(language),
+    ])
+
+
+def build_media_menu(language: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("📘 فەیسبووک", callback_data="menu:media:facebook"), InlineKeyboardButton("🎵 تیک تۆک", callback_data="menu:media:tiktok")],
+        [InlineKeyboardButton("📸 اینستاگرام", callback_data="menu:media:instagram"), InlineKeyboardButton("👻 سناپ چات", callback_data="menu:media:snapchat")],
+        [InlineKeyboardButton("📱 فایلەکانی سۆشیال میدیا", callback_data="menu:media:upload")],
+        build_back_button(language),
+    ])
+
+
+def build_files_menu(language: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("📁 دروستکردنی ئەرشیف", callback_data="menu:files:archive")],
+        build_back_button(language),
+    ])
+
+
+def language_menu_text(language: str = "kurdish") -> str:
+    return f"──────────\n{MENU_TEXT[_menu_language(language)]['language']}\n──────────"
 
 
 def detect_response_language(text: str) -> str:
@@ -494,10 +554,63 @@ def create_application(settings: Settings) -> Application:
                 START_MESSAGE_DELETE_DELAY,
                 data={"chat_id": response.chat_id, "message_id": response.message_id},
             )
-        await update.message.reply_text(
-            language_menu_text(),
-            reply_markup=build_language_menu(),
-        )
+        context.user_data[MENU_MODE_KEY] = "main"
+        language = context.user_data.get(SELECTED_LANGUAGE_KEY, "kurdish")
+        await update.message.reply_text(main_menu_text(language), reply_markup=build_main_menu(language))
+
+    async def handle_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        query = update.callback_query
+        if query is None or not is_private_chat(update):
+            return
+
+        data = query.data or ""
+        language = context.user_data.get(SELECTED_LANGUAGE_KEY, "kurdish")
+        labels = MENU_TEXT[_menu_language(language)]
+        if data == "menu:main":
+            context.user_data[MENU_MODE_KEY] = "main"
+            await query.answer()
+            await query.edit_message_text(main_menu_text(language), reply_markup=build_main_menu(language))
+            return
+        if data == "menu:language":
+            await query.answer()
+            await query.edit_message_text(language_menu_text(language), reply_markup=build_language_menu(language))
+            return
+        if data == "menu:chat":
+            context.user_data[MENU_MODE_KEY] = "chat"
+            await query.answer()
+            await query.edit_message_text(f"{labels['chat']}\n\n{labels['choose']}", reply_markup=InlineKeyboardMarkup([build_back_button(language)]))
+            return
+        if data == "menu:converter":
+            context.user_data[MENU_MODE_KEY] = "converter"
+            await query.answer()
+            await query.edit_message_text(f"{labels['converter']}\n\n{labels['choose']}", reply_markup=build_converter_menu(language))
+            return
+        if data == "menu:media":
+            context.user_data[MENU_MODE_KEY] = "media"
+            await query.answer()
+            await query.edit_message_text(f"{labels['media']}\n\n{labels['choose']}", reply_markup=build_media_menu(language))
+            return
+        if data == "menu:files":
+            context.user_data[MENU_MODE_KEY] = "files"
+            await query.answer()
+            await query.edit_message_text(f"{labels['files']}\n\n{labels['choose']}", reply_markup=build_files_menu(language))
+            return
+        if data.startswith("menu:converter:"):
+            context.user_data[MENU_MODE_KEY] = data.removeprefix("menu:")
+            await query.answer()
+            await query.edit_message_text("📥 تکایە فایلەکە بنێرە بۆ دەستپێکردنی گۆڕین.", reply_markup=InlineKeyboardMarkup([build_back_button(language)]))
+            return
+        if data.startswith("menu:media:"):
+            context.user_data[MENU_MODE_KEY] = data.removeprefix("menu:")
+            await query.answer()
+            await query.edit_message_text("🔗 تکایە لینکی میدیا بنێرە، یان فایلەکە ڕاستەوخۆ upload بکە.", reply_markup=InlineKeyboardMarkup([build_back_button(language)]))
+            return
+        if data == "menu:files:archive":
+            context.user_data[MENU_MODE_KEY] = "files:archive"
+            await query.answer()
+            await query.edit_message_text("📁 فایلەکانت بنێرە بۆ دروستکردنی ئەرشیفی گەلەری.", reply_markup=InlineKeyboardMarkup([build_back_button(language)]))
+            return
+        await query.answer()
 
     async def select_language(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         query = update.callback_query
@@ -511,11 +624,9 @@ def create_application(settings: Settings) -> Application:
             return
 
         context.user_data[SELECTED_LANGUAGE_KEY] = language
+        context.user_data[MENU_MODE_KEY] = "main"
         await query.answer(f"{language_labels[language]} selected")
-        await query.edit_message_text(
-            language_menu_text(),
-            reply_markup=build_language_menu(),
-        )
+        await query.edit_message_text(main_menu_text(language), reply_markup=build_main_menu(language))
 
     async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if update.message is not None:
@@ -584,8 +695,8 @@ def create_application(settings: Settings) -> Application:
         if not is_private_chat(update) or update.message is None:
             return
         await update.message.reply_text(
-            language_menu_text(),
-            reply_markup=build_language_menu(),
+            language_menu_text(context.user_data.get(SELECTED_LANGUAGE_KEY, "kurdish")),
+            reply_markup=build_language_menu(context.user_data.get(SELECTED_LANGUAGE_KEY, "kurdish")),
         )
 
     async def clear_context(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -685,6 +796,10 @@ def create_application(settings: Settings) -> Application:
 
         chat = update.effective_chat
         is_group_chat = chat is not None and chat.type in {"group", "supergroup"}
+        if not is_group_chat and context.user_data.get(MENU_MODE_KEY, "main") != "chat":
+            language = context.user_data.get(SELECTED_LANGUAGE_KEY, "kurdish")
+            await update.message.reply_text(main_menu_text(language), reply_markup=build_main_menu(language))
+            return
         reply_target = update.message.reply_to_message
 
         if is_group_chat and update.effective_user and update.effective_user.username:
@@ -875,6 +990,9 @@ def create_application(settings: Settings) -> Application:
     application.add_handler(CommandHandler("status", status))
     application.add_handler(CommandHandler("language", language_info))
     application.add_handler(CommandHandler("clear", clear_context))
+    application.add_handler(
+        CallbackQueryHandler(handle_menu_callback, pattern=r"^menu:")
+    )
     application.add_handler(
         CallbackQueryHandler(select_language, pattern=r"^language:")
     )
