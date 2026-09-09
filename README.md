@@ -1,3 +1,11 @@
+---
+title: mrshasobot
+emoji: 🤖
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+pinned: false
+---
 # MrShaso AI Bot
 
 A professional Telegram AI bot built with Python, Telegram Bot API, and Gemini.
