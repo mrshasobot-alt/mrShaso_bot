@@ -417,13 +417,8 @@ def social_media_kind(path: Path) -> str | None:
     return None
 
 
-def _download_url_sync(url: str, workdir: str) -> Path:
-    try:
-        yt_dlp = importlib.import_module("yt_dlp")
-    except ImportError as exc:
-        raise RuntimeError("yt-dlp is not installed") from exc
-
-    options = {
+def build_download_options(workdir: str) -> dict[str, object]:
+    return {
         "outtmpl": str(Path(workdir) / "download.%(ext)s"),
         "format": "bestvideo*+bestaudio/best",
         "merge_output_format": "mp4",
@@ -431,7 +426,22 @@ def _download_url_sync(url: str, workdir: str) -> Path:
         "quiet": True,
         "no_warnings": True,
         "restrictfilenames": True,
+        "socket_timeout": 20,
+        "retries": 3,
+        "fragment_retries": 3,
+        "concurrent_fragment_downloads": 4,
+        "continuedl": True,
+        "overwrites": True,
     }
+
+
+def _download_url_sync(url: str, workdir: str) -> Path:
+    try:
+        yt_dlp = importlib.import_module("yt_dlp")
+    except ImportError as exc:
+        raise RuntimeError("yt-dlp is not installed") from exc
+
+    options = build_download_options(workdir)
     with yt_dlp.YoutubeDL(options) as downloader:
         downloader.download([url])
 

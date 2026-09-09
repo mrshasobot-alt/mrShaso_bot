@@ -3,6 +3,7 @@ from types import SimpleNamespace
 
 from app.bot import (
     SUPPORTED_CONVERSION_OPERATIONS,
+    build_download_options,
     build_main_menu,
     build_converter_menu,
     build_language_menu,
@@ -18,6 +19,13 @@ from app.gemini_client import GeminiClient
 
 
 class GeminiClientTests(unittest.TestCase):
+    def test_download_options_are_fast_and_single_item(self):
+        options = build_download_options("work")
+        self.assertTrue(options["noplaylist"])
+        self.assertEqual(options["concurrent_fragment_downloads"], 4)
+        self.assertEqual(options["socket_timeout"], 20)
+        self.assertEqual(options["retries"], 3)
+
     def test_language_buttons_are_translated_for_selected_language(self):
         expected = {
             "english": {"Kurdish", "Persian", "Arabic", "English", "Turkish"},
