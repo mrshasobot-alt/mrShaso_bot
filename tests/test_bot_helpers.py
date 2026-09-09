@@ -1,5 +1,7 @@
+import asyncio
 import unittest
 from types import SimpleNamespace
+from unittest.mock import AsyncMock
 
 from app.bot import (
     MENU_MODE_KEY,
@@ -7,6 +9,7 @@ from app.bot import (
     create_application,
     build_download_options,
     build_main_menu,
+    build_stt_language_menu,
     build_converter_menu,
     build_language_menu,
     build_media_menu,
@@ -82,8 +85,8 @@ class GeminiClientTests(unittest.TestCase):
         update = SimpleNamespace(
             callback_query=SimpleNamespace(
                 data="menu:main",
-                answer=lambda *args, **kwargs: None,
-                edit_message_text=lambda *args, **kwargs: None,
+                answer=AsyncMock(),
+                edit_message_text=AsyncMock(),
             ),
             effective_chat=SimpleNamespace(type="private"),
         )
@@ -92,6 +95,20 @@ class GeminiClientTests(unittest.TestCase):
 
         self.assertEqual(context.user_data[MENU_MODE_KEY], "main")
         self.assertIn(MENU_MODE_KEY, context.user_data)
+
+    def test_stt_menu_is_at_main_menu_bottom_and_has_all_languages(self):
+        main_rows = build_main_menu("kurdish").inline_keyboard
+        main_callbacks = [button.callback_data for row in main_rows for button in row]
+        self.assertEqual(main_callbacks[-4:], ["none", "menu:stt", "none", "menu:main"])
+
+        stt_callbacks = {
+            button.callback_data
+            for row in build_stt_language_menu("kurdish").inline_keyboard
+            for button in row
+        }
+        self.assertTrue({
+            "menu:stt:ku", "menu:stt:fa", "menu:stt:ar", "menu:stt:en", "menu:stt:tr",
+        }.issubset(stt_callbacks))
 
     def test_extract_media_url_ignores_trailing_punctuation(self):
         self.assertEqual(

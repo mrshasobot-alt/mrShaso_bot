@@ -13,6 +13,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from telegram import ChatPermissions, InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.error import BadRequest
 from telegram.ext import (
     Application,
     CallbackQueryHandler,
@@ -57,6 +58,14 @@ STT_LANGUAGE_OPTIONS = (
     ("English", "en"),
     ("Türkçe", "tr"),
 )
+
+STT_LANGUAGE_NAMES = {
+    "ku": "kurdish",
+    "fa": "persian",
+    "ar": "arabic",
+    "en": "english",
+    "tr": "turkish",
+}
 
 LANGUAGE_BUTTON_TEXT = {
     "kurdish": {
@@ -193,9 +202,6 @@ def build_main_menu(language: str = "kurdish") -> InlineKeyboardMarkup:
         language_buttons[:3],
         language_buttons[3:],
         [InlineKeyboardButton(f"— {PRIVATE_CHAT_HEADER_TEXT[_menu_language(language)]} —", callback_data="menu:chat")],
-        [InlineKeyboardButton("----------------------------------", callback_data="none")],
-        [InlineKeyboardButton(actions["stt"], callback_data="menu:stt")],
-        [InlineKeyboardButton("----------------------------------", callback_data="none")],
         build_section_header(labels["converter"], "converter"),
         [InlineKeyboardButton(actions["mp3_voice"], callback_data="menu:converter:mp3_voice"), InlineKeyboardButton(actions["voice_mp3"], callback_data="menu:converter:voice_mp3")],
         [InlineKeyboardButton(actions["video_mp3"], callback_data="menu:converter:video_mp3"), InlineKeyboardButton(actions["video_voice"], callback_data="menu:converter:video_voice")],
@@ -203,6 +209,9 @@ def build_main_menu(language: str = "kurdish") -> InlineKeyboardMarkup:
         [InlineKeyboardButton(actions["facebook"], callback_data="menu:media:facebook"), InlineKeyboardButton(actions["tiktok"], callback_data="menu:media:tiktok")],
         [InlineKeyboardButton(actions["instagram"], callback_data="menu:media:instagram"), InlineKeyboardButton(actions["snapchat"], callback_data="menu:media:snapchat")],
         [InlineKeyboardButton(f"— 📱 {labels['social_files']} —", callback_data="menu:media:upload")],
+        [InlineKeyboardButton("----------------------------------", callback_data="none")],
+        [InlineKeyboardButton(actions["stt"], callback_data="menu:stt")],
+        [InlineKeyboardButton("----------------------------------", callback_data="none")],
         [InlineKeyboardButton(labels["refresh"], callback_data="menu:main")],
     ])
 
@@ -221,6 +230,10 @@ def build_stt_language_menu(language: str = "kurdish") -> InlineKeyboardMarkup:
         build_back_button(language),
     ]
     return InlineKeyboardMarkup(keyboard)
+
+
+def stt_language_name(code: str) -> str:
+    return STT_LANGUAGE_NAMES.get(code.lower(), "kurdish")
 
 
 def main_menu_text(language: str = "kurdish") -> str:
@@ -928,7 +941,7 @@ def create_application(settings: Settings) -> Application:
         if message is None:
             return
         mode = context.user_data.get(MENU_MODE_KEY, "main")
-        if mode not in {"media:upload", "converter:mp3_voice", "converter:voice_mp3", "converter:video_mp3", "converter:video_voice", "stt", "stt:ku", "stt:en", "stt:ar"}:
+        if mode not in {"media:upload", "converter:mp3_voice", "converter:voice_mp3", "converter:video_mp3", "converter:video_voice", "stt"} and not mode.startswith("stt:"):
             return
 
         try:
@@ -940,7 +953,7 @@ def create_application(settings: Settings) -> Application:
                     return
                 if mode.startswith("stt"):
                     stt_language = mode.removeprefix("stt:") if mode.startswith("stt:") else context.user_data.get(SELECTED_LANGUAGE_KEY, "kurdish")
-                    stt_language = {"ku": "kurdish", "fa": "persian", "ar": "arabic", "en": "english", "tr": "turkish"}.get(stt_language, stt_language)
+                    stt_language = stt_language_name(stt_language) if stt_language in STT_LANGUAGE_NAMES else stt_language
                     transcript = await asyncio.to_thread(
                         _transcribe_voice_sync,
                         source,
@@ -997,6 +1010,11 @@ def create_application(settings: Settings) -> Application:
         if data == "menu:main":
             await query.answer()
             context.user_data[MENU_MODE_KEY] = "main"
+            try:
+                await query.edit_message_text(main_menu_text(language), reply_markup=build_main_menu(language))
+            except BadRequest as exc:
+                if "message is not modified" not in str(exc).lower():
+                    raise
             return
         if data == "menu:language":
             await query.answer()
@@ -1010,11 +1028,14 @@ def create_application(settings: Settings) -> Application:
         if data == "menu:stt":
             context.user_data[MENU_MODE_KEY] = "stt"
             await query.answer()
-            await query.edit_message_text("🎙️ زمان هەڵبژێرە بۆ دەنگ بۆ نوسین:", reply_markup=build_stt_language_menu(language))
+            await query.edit_message_text(f"{MENU_ACTION_TEXT[_menu_language(language)]['stt']}\n\nزمان هەڵبژێرە:", reply_markup=build_stt_language_menu(language))
             return
         if data.startswith("menu:stt:"):
             code = (data.removeprefix("menu:stt:") or "ku").lower()
-            stt_language = {"ku": "kurdish", "fa": "persian", "ar": "arabic", "en": "english", "tr": "turkish"}.get(code, "kurdish")
+            if code not in STT_LANGUAGE_NAMES:
+                await query.answer("زمانی پشتگیریکراو نییە", show_alert=True)
+                return
+            stt_language = stt_language_name(code)
             context.user_data[MENU_MODE_KEY] = f"stt:{code}"
             await query.answer()
             await query.edit_message_text(
