@@ -65,14 +65,17 @@ class GeminiClient:
         if not cleaned:
             return "multilingual"
 
-        if any(ch in cleaned for ch in ["چ", "ڕ", "ڵ", "ۆ", "ێ", "ە", "ئ", "ژ", "گ", "ک"]):
+        if any(ch in cleaned for ch in ["ڕ", "ڵ", "ۆ", "ێ", "ە", "ئ", "ڤ"]):
             return "kurdish"
-
-        if re.search(r"[\u0600-\u06FF]", cleaned):
-            return "arabic"
 
         if any(word in cleaned for word in ["سلام", "خوب", "چطور", "درود", "پرسش", "فارسی", "دستورات"]):
             return "persian"
+
+        if any(word in cleaned for word in ["مرحبا", "أهلا", "اهلا", "كيف", "العربية", "شكرا"]):
+            return "arabic"
+
+        if re.search(r"[\u0600-\u06FF]", cleaned):
+            return "arabic"
 
         if re.search(r"[a-z]", cleaned):
             return "english"
@@ -80,10 +83,41 @@ class GeminiClient:
         return "multilingual"
 
     @staticmethod
+    def detect_kurdish_dialect(text: str) -> str:
+        """Return the most likely Kurdish variety without claiming certainty."""
+        cleaned = (text or "").strip().lower()
+        if not cleaned:
+            return "unknown"
+
+        sorani_markers = ("ە", "ۆ", "ێ", "ڵ", "ڕ", "بۆ", "چی", "چۆن", "دەکات")
+        badini_markers = ("ئەڤ", "ئێ", "ێک", "هەیە", "دکەم", "دکەی", "خۆ")
+        if any(marker in cleaned for marker in ("ئەڤ", "دکەم", "دکەی")):
+            return "badini"
+        sorani_score = sum(cleaned.count(marker) for marker in sorani_markers)
+        badini_score = sum(cleaned.count(marker) for marker in badini_markers)
+        if sorani_score > badini_score and sorani_score:
+            return "sorani"
+        if badini_score > sorani_score and badini_score:
+            return "badini"
+        return "kurdish-general"
+
+    @classmethod
+    def detect_language_profile(cls, text: str) -> str:
+        language = cls.detect_language(text)
+        if language == "kurdish":
+            return f"kurdish-{cls.detect_kurdish_dialect(text)}"
+        return language
+
+    @staticmethod
     def build_system_prompt(language: str) -> str:
         lang = (language or "multilingual").lower()
-        if lang == "kurdish":
-            language_hint = "کوردی (Kurdish)"
+        if lang in {"kurdish", "sorani", "badini", "kurdish-sorani", "kurdish-badini", "kurdish-kurdish-general"}:
+            dialect = {
+                "kurdish-sorani": "Sorani",
+                "kurdish-badini": "Badini/Kurmanji",
+                "kurdish-kurdish-general": "the user's Kurdish variety",
+            }.get(lang, "the user's Kurdish dialect")
+            language_hint = f"Kurdish, specifically {dialect}"
         elif lang == "arabic":
             language_hint = "عربي (Arabic)"
         elif lang == "persian":
@@ -95,7 +129,11 @@ class GeminiClient:
 
         return (
             "You are MrShaso AI, a highly capable, helpful, and professional multilingual assistant. "
-            f"Answer mainly in {language_hint} when possible, and switch naturally to the user's language when needed. "
+            f"Answer mainly in {language_hint}, and switch naturally to the user's language when needed. "
+            "Identify the user's intent before answering and ask one concise clarification question only when the request is genuinely ambiguous. "
+            "Preserve the user's dialect, register, and script whenever possible. For Kurdish, distinguish Sorani from Badini/Kurmanji and do not replace one with another without a reason. "
+            "For Kurdish, Persian, and Arabic, use correct spelling, grammar, punctuation, and natural word order. "
+            "Do not mix languages or dialects inside a sentence unless the user asks for translation or uses necessary technical names. "
             "Provide clear, accurate, respectful, and structured answers. "
             "Avoid harmful, illegal, or unsafe content. "
             "Be concise but detailed enough to be useful. "

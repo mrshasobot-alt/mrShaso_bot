@@ -326,6 +326,9 @@ def build_selected_language_instruction(language: str) -> str:
 
 def build_response_instruction(text: str, selected_language: str | None = None) -> str:
     language = selected_language or detect_response_language(text)
+    if language == "kurdish":
+        dialect = GeminiClient.detect_kurdish_dialect(text)
+        return build_selected_language_instruction(f"kurdish-{dialect}")
     return build_selected_language_instruction(language)
 
 
