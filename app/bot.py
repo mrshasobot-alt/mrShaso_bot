@@ -50,6 +50,12 @@ LANGUAGE_OPTIONS = (
     ("Türkçe", "turkish"),
 )
 
+STT_LANGUAGE_OPTIONS = (
+    ("کوردی (Sorani)", "ku"),
+    ("English", "en"),
+    ("عەرەبی", "ar"),
+)
+
 LANGUAGE_BUTTON_TEXT = {
     "kurdish": {
         "kurdish": "کوردی", "persian": "فارسی", "arabic": "عەرەبی",
@@ -197,6 +203,18 @@ def build_main_menu(language: str = "kurdish") -> InlineKeyboardMarkup:
         [InlineKeyboardButton(f"— 📱 {labels['social_files']} —", callback_data="menu:media:upload")],
         [InlineKeyboardButton(labels["refresh"], callback_data="menu:main")],
     ])
+
+
+def build_stt_language_menu(language: str = "kurdish") -> InlineKeyboardMarkup:
+    keyboard = [
+        [
+            InlineKeyboardButton(label, callback_data=f"menu:stt:{code}")
+            for label, code in STT_LANGUAGE_OPTIONS[:2]
+        ],
+        [InlineKeyboardButton(STT_LANGUAGE_OPTIONS[2][0], callback_data=f"menu:stt:{STT_LANGUAGE_OPTIONS[2][1]}")],
+        build_back_button(language),
+    ]
+    return InlineKeyboardMarkup(keyboard)
 
 
 def main_menu_text(language: str = "kurdish") -> str:
@@ -904,7 +922,7 @@ def create_application(settings: Settings) -> Application:
         if message is None:
             return
         mode = context.user_data.get(MENU_MODE_KEY, "main")
-        if mode not in {"media:upload", "converter:mp3_voice", "converter:voice_mp3", "converter:video_mp3", "converter:video_voice", "stt"}:
+        if mode not in {"media:upload", "converter:mp3_voice", "converter:voice_mp3", "converter:video_mp3", "converter:video_voice", "stt", "stt:ku", "stt:en", "stt:ar"}:
             return
 
         try:
@@ -914,12 +932,13 @@ def create_application(settings: Settings) -> Application:
                     await store_social_media_file(message, message, source, context)
                     await message.reply_text(localized_message(context.user_data.get(SELECTED_LANGUAGE_KEY), "stored"))
                     return
-                if mode == "stt":
-                    detected = GeminiClient.detect_language(Path(source).name)
+                if mode.startswith("stt"):
+                    stt_language = mode.removeprefix("stt:") if mode.startswith("stt:") else context.user_data.get(SELECTED_LANGUAGE_KEY, "kurdish")
+                    stt_language = {"ku": "kurdish", "en": "english", "ar": "arabic"}.get(stt_language, stt_language)
                     transcript = await asyncio.to_thread(
                         _transcribe_voice_sync,
                         source,
-                        detected,
+                        stt_language,
                     )
                     await message.reply_text(transcript)
                     return
@@ -985,7 +1004,17 @@ def create_application(settings: Settings) -> Application:
         if data == "menu:stt":
             context.user_data[MENU_MODE_KEY] = "stt"
             await query.answer()
-            await query.edit_message_text("🎙️ دەنگەکە بنێرە. دواتر بە شێوەی خوێندراوەوە و بەو زمانەی دەنگەکە دەنێردرێت، تێکستەکە بۆت دەگەڕێنێتەوە.", reply_markup=InlineKeyboardMarkup([build_back_button(language)]))
+            await query.edit_message_text("🎙️ زمان هەڵبژێرە بۆ دەنگ بۆ نوسین:", reply_markup=build_stt_language_menu(language))
+            return
+        if data.startswith("menu:stt:"):
+            code = (data.removeprefix("menu:stt:") or "ku").lower()
+            stt_language = {"ku": "kurdish", "en": "english", "ar": "arabic"}.get(code, "kurdish")
+            context.user_data[MENU_MODE_KEY] = f"stt:{code}"
+            await query.answer()
+            await query.edit_message_text(
+                f"🎙️ هەڵبژاردنی زمان: {next(label for label, value in STT_LANGUAGE_OPTIONS if value == code)}\n\nدەنگەکە ڕاستەوخۆ بەو زمانەی هەڵبژێردراوە بگۆڕدرێت بۆ تێکست.",
+                reply_markup=InlineKeyboardMarkup([build_back_button(language)]),
+            )
             return
         if data == "menu:converter":
             context.user_data[MENU_MODE_KEY] = "converter"
