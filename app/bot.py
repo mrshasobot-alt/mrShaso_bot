@@ -915,9 +915,8 @@ def create_application(settings: Settings) -> Application:
         language = context.user_data.get(SELECTED_LANGUAGE_KEY, "kurdish")
         labels = MENU_TEXT[_menu_language(language)]
         if data == "menu:main":
-            context.user_data[MENU_MODE_KEY] = "main"
             await query.answer()
-            await query.edit_message_text(main_menu_text(language), reply_markup=build_main_menu(language))
+            context.user_data[MENU_MODE_KEY] = "main"
             return
         if data == "menu:language":
             await query.answer()

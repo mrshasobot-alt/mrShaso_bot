@@ -2,7 +2,9 @@ import unittest
 from types import SimpleNamespace
 
 from app.bot import (
+    MENU_MODE_KEY,
     SUPPORTED_CONVERSION_OPERATIONS,
+    create_application,
     build_download_options,
     build_main_menu,
     build_converter_menu,
@@ -15,6 +17,7 @@ from app.bot import (
     social_media_kind,
     should_answer_identity,
 )
+from app.config import Settings
 from app.gemini_client import GeminiClient
 
 
@@ -67,6 +70,28 @@ class GeminiClientTests(unittest.TestCase):
             )
             self.assertIn(expected, converter_text)
             self.assertTrue(media_text)
+
+    def test_back_button_resets_menu_mode_to_main_without_clearing_state(self):
+        app = create_application(Settings(bot_token="test-token", gemini_api_key="test-key", gemini_model="gemini-2.0-flash"))
+        menu_handler = next(
+            handler for group in app.handlers.values() for handler in group
+            if getattr(getattr(handler, "callback", None), "__name__", "") == "handle_menu_callback"
+        )
+
+        context = SimpleNamespace(user_data={MENU_MODE_KEY: "media:upload"})
+        update = SimpleNamespace(
+            callback_query=SimpleNamespace(
+                data="menu:main",
+                answer=lambda *args, **kwargs: None,
+                edit_message_text=lambda *args, **kwargs: None,
+            ),
+            effective_chat=SimpleNamespace(type="private"),
+        )
+
+        asyncio.run(menu_handler.callback(update, context))
+
+        self.assertEqual(context.user_data[MENU_MODE_KEY], "main")
+        self.assertIn(MENU_MODE_KEY, context.user_data)
 
     def test_extract_media_url_ignores_trailing_punctuation(self):
         self.assertEqual(
