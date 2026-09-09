@@ -101,6 +101,13 @@ class GeminiClientTests(unittest.TestCase):
         main_callbacks = [button.callback_data for row in main_rows for button in row]
         self.assertEqual(main_callbacks[-4:], ["none", "menu:stt", "none", "menu:main"])
 
+        english_labels = {
+            button.text
+            for row in build_main_menu("english").inline_keyboard
+            for button in row
+        }
+        self.assertIn("🎙️ Speech to Text", english_labels)
+
         stt_callbacks = {
             button.callback_data
             for row in build_stt_language_menu("kurdish").inline_keyboard

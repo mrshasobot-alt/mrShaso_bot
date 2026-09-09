@@ -160,7 +160,7 @@ MENU_ACTION_TEXT = {
     "english": {
         "mp3_voice": "🎵 MP3 → Voice", "voice_mp3": "🎙️ Voice → MP3",
         "video_mp3": "🎬 Video → MP3", "video_voice": "📹 Video → Voice",
-        "stt": "🎙️ Voice to Text",
+        "stt": "🎙️ Speech to Text",
         "facebook": "📘 Facebook", "tiktok": "🎵 TikTok",
         "instagram": "📸 Instagram", "snapchat": "👻 Snapchat",
         "social_files": "📱 Social media files",
