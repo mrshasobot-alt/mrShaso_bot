@@ -119,6 +119,7 @@ MENU_ACTION_TEXT = {
     "kurdish": {
         "mp3_voice": "🎵 MP3 → Voice", "voice_mp3": "🎙️ Voice → MP3",
         "video_mp3": "🎬 Video → MP3", "video_voice": "📹 Video → Voice",
+        "stt": "🎙️ دەنگ بۆ نوسین",
         "facebook": "📘 فەیسبووک", "tiktok": "🎵 تیک تۆک",
         "instagram": "📸 اینستاگرام", "snapchat": "👻 سناپ چات",
         "social_files": "📱 فایلەکانی سۆشیال میدیا",
@@ -126,6 +127,7 @@ MENU_ACTION_TEXT = {
     "persian": {
         "mp3_voice": "🎵 MP3 → صدا", "voice_mp3": "🎙️ صدا → MP3",
         "video_mp3": "🎬 ویدیو → MP3", "video_voice": "📹 ویدیو → صدا",
+        "stt": "🎙️ گفتار به متن",
         "facebook": "📘 فیسبوک", "tiktok": "🎵 تیک‌تاک",
         "instagram": "📸 اینستاگرام", "snapchat": "👻 اسنپ‌چت",
         "social_files": "📱 فایل‌های شبکه‌های اجتماعی",
@@ -133,6 +135,7 @@ MENU_ACTION_TEXT = {
     "arabic": {
         "mp3_voice": "🎵 MP3 ← صوت", "voice_mp3": "🎙️ صوت ← MP3",
         "video_mp3": "🎬 فيديو ← MP3", "video_voice": "📹 فيديو ← صوت",
+        "stt": "🎙️ الصوت إلى نص",
         "facebook": "📘 فيسبوك", "tiktok": "🎵 تيك توك",
         "instagram": "📸 إنستغرام", "snapchat": "👻 سناب شات",
         "social_files": "📱 ملفات التواصل الاجتماعي",
@@ -140,6 +143,7 @@ MENU_ACTION_TEXT = {
     "english": {
         "mp3_voice": "🎵 MP3 → Voice", "voice_mp3": "🎙️ Voice → MP3",
         "video_mp3": "🎬 Video → MP3", "video_voice": "📹 Video → Voice",
+        "stt": "🎙️ Voice to Text",
         "facebook": "📘 Facebook", "tiktok": "🎵 TikTok",
         "instagram": "📸 Instagram", "snapchat": "👻 Snapchat",
         "social_files": "📱 Social media files",
@@ -147,6 +151,7 @@ MENU_ACTION_TEXT = {
     "turkish": {
         "mp3_voice": "🎵 MP3 → Ses", "voice_mp3": "🎙️ Ses → MP3",
         "video_mp3": "🎬 Video → MP3", "video_voice": "📹 Video → Ses",
+        "stt": "🎙️ Ses → Metin",
         "facebook": "📘 Facebook", "tiktok": "🎵 TikTok",
         "instagram": "📸 Instagram", "snapchat": "👻 Snapchat",
         "social_files": "📱 Sosyal medya dosyaları",
@@ -180,6 +185,9 @@ def build_main_menu(language: str = "kurdish") -> InlineKeyboardMarkup:
         language_buttons[:3],
         language_buttons[3:],
         [InlineKeyboardButton(f"— {PRIVATE_CHAT_HEADER_TEXT[_menu_language(language)]} —", callback_data="menu:chat")],
+        [InlineKeyboardButton("----------------------------------", callback_data="none")],
+        [InlineKeyboardButton(actions["stt"], callback_data="menu:stt")],
+        [InlineKeyboardButton("----------------------------------", callback_data="none")],
         build_section_header(labels["converter"], "converter"),
         [InlineKeyboardButton(actions["mp3_voice"], callback_data="menu:converter:mp3_voice"), InlineKeyboardButton(actions["voice_mp3"], callback_data="menu:converter:voice_mp3")],
         [InlineKeyboardButton(actions["video_mp3"], callback_data="menu:converter:video_mp3"), InlineKeyboardButton(actions["video_voice"], callback_data="menu:converter:video_voice")],
@@ -483,6 +491,44 @@ def _media_suffix(message: object) -> str:
             mime_type = getattr(media, "mime_type", None)
             return mimetypes.guess_extension(mime_type or "") or ".bin"
     return ".bin"
+
+
+def _transcribe_voice_sync(source: Path, detected_language: str) -> str:
+    try:
+        from google import genai as google_genai
+    except Exception as exc:  # pragma: no cover - runtime fallback
+        raise RuntimeError("Google GenAI is not available") from exc
+
+    try:
+        client = google_genai.Client(api_key=os.getenv("GEMINI_API_KEY", "").strip())
+    except Exception as exc:  # pragma: no cover - runtime fallback
+        raise RuntimeError("Failed to initialize Gemini audio transcription client") from exc
+
+    language_hint = {
+        "kurdish": "کوردی (Sorani)",
+        "persian": "فارسی",
+        "arabic": "العربية",
+        "turkish": "Türkçe",
+        "english": "English",
+    }.get(detected_language, "Kurdish")
+
+    try:
+        uploaded = client.files.upload(file=str(source))
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=[
+                {
+                    "role": "user",
+                    "parts": [
+                        {"text": f"Transcribe this speech accurately and return ONLY the transcript text in {language_hint}. Do not add explanations, labels, or extra commentary."},
+                        {"file": uploaded},
+                    ],
+                }
+            ],
+        )
+        return GeminiClient._extract_text(response).strip() or "هیچ دەنگێک نەدۆزرایەوە."
+    except Exception as exc:
+        raise RuntimeError(f"Voice transcription failed: {exc}") from exc
 
 
 def is_greeting_message(text: str) -> bool:
@@ -858,7 +904,7 @@ def create_application(settings: Settings) -> Application:
         if message is None:
             return
         mode = context.user_data.get(MENU_MODE_KEY, "main")
-        if mode not in {"media:upload", "converter:mp3_voice", "converter:voice_mp3", "converter:video_mp3", "converter:video_voice"}:
+        if mode not in {"media:upload", "converter:mp3_voice", "converter:voice_mp3", "converter:video_mp3", "converter:video_voice", "stt"}:
             return
 
         try:
@@ -867,6 +913,15 @@ def create_application(settings: Settings) -> Application:
                 if mode == "media:upload":
                     await store_social_media_file(message, message, source, context)
                     await message.reply_text(localized_message(context.user_data.get(SELECTED_LANGUAGE_KEY), "stored"))
+                    return
+                if mode == "stt":
+                    detected = GeminiClient.detect_language(Path(source).name)
+                    transcript = await asyncio.to_thread(
+                        _transcribe_voice_sync,
+                        source,
+                        detected,
+                    )
+                    await message.reply_text(transcript)
                     return
                 converted = await asyncio.to_thread(_convert_media_sync, source, mode.removeprefix("converter:"), workdir)
                 await send_media_file(message, context, converted, mode.removeprefix("converter:"))
@@ -926,6 +981,11 @@ def create_application(settings: Settings) -> Application:
             context.user_data[MENU_MODE_KEY] = "chat"
             await query.answer()
             await query.edit_message_text(CHAT_WELCOME_TEXT[_menu_language(language)], reply_markup=InlineKeyboardMarkup([build_back_button(language)]))
+            return
+        if data == "menu:stt":
+            context.user_data[MENU_MODE_KEY] = "stt"
+            await query.answer()
+            await query.edit_message_text("🎙️ دەنگەکە بنێرە. دواتر بە شێوەی خوێندراوەوە و بەو زمانەی دەنگەکە دەنێردرێت، تێکستەکە بۆت دەگەڕێنێتەوە.", reply_markup=InlineKeyboardMarkup([build_back_button(language)]))
             return
         if data == "menu:converter":
             context.user_data[MENU_MODE_KEY] = "converter"
