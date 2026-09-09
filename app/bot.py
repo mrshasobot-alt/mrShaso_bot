@@ -52,8 +52,10 @@ LANGUAGE_OPTIONS = (
 
 STT_LANGUAGE_OPTIONS = (
     ("کوردی (Sorani)", "ku"),
-    ("English", "en"),
+    ("فارسی", "fa"),
     ("عەرەبی", "ar"),
+    ("English", "en"),
+    ("Türkçe", "tr"),
 )
 
 LANGUAGE_BUTTON_TEXT = {
@@ -211,7 +213,11 @@ def build_stt_language_menu(language: str = "kurdish") -> InlineKeyboardMarkup:
             InlineKeyboardButton(label, callback_data=f"menu:stt:{code}")
             for label, code in STT_LANGUAGE_OPTIONS[:2]
         ],
-        [InlineKeyboardButton(STT_LANGUAGE_OPTIONS[2][0], callback_data=f"menu:stt:{STT_LANGUAGE_OPTIONS[2][1]}")],
+        [
+            InlineKeyboardButton(label, callback_data=f"menu:stt:{code}")
+            for label, code in STT_LANGUAGE_OPTIONS[2:4]
+        ],
+        [InlineKeyboardButton(STT_LANGUAGE_OPTIONS[4][0], callback_data=f"menu:stt:{STT_LANGUAGE_OPTIONS[4][1]}")],
         build_back_button(language),
     ]
     return InlineKeyboardMarkup(keyboard)
@@ -934,7 +940,7 @@ def create_application(settings: Settings) -> Application:
                     return
                 if mode.startswith("stt"):
                     stt_language = mode.removeprefix("stt:") if mode.startswith("stt:") else context.user_data.get(SELECTED_LANGUAGE_KEY, "kurdish")
-                    stt_language = {"ku": "kurdish", "en": "english", "ar": "arabic"}.get(stt_language, stt_language)
+                    stt_language = {"ku": "kurdish", "fa": "persian", "ar": "arabic", "en": "english", "tr": "turkish"}.get(stt_language, stt_language)
                     transcript = await asyncio.to_thread(
                         _transcribe_voice_sync,
                         source,
@@ -1008,7 +1014,7 @@ def create_application(settings: Settings) -> Application:
             return
         if data.startswith("menu:stt:"):
             code = (data.removeprefix("menu:stt:") or "ku").lower()
-            stt_language = {"ku": "kurdish", "en": "english", "ar": "arabic"}.get(code, "kurdish")
+            stt_language = {"ku": "kurdish", "fa": "persian", "ar": "arabic", "en": "english", "tr": "turkish"}.get(code, "kurdish")
             context.user_data[MENU_MODE_KEY] = f"stt:{code}"
             await query.answer()
             await query.edit_message_text(
