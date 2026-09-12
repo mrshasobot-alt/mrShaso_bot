@@ -209,9 +209,8 @@ def build_main_menu(language: str = "kurdish") -> InlineKeyboardMarkup:
         [InlineKeyboardButton(actions["facebook"], callback_data="menu:media:facebook"), InlineKeyboardButton(actions["tiktok"], callback_data="menu:media:tiktok")],
         [InlineKeyboardButton(actions["instagram"], callback_data="menu:media:instagram"), InlineKeyboardButton(actions["snapchat"], callback_data="menu:media:snapchat")],
         [InlineKeyboardButton(f"— 📱 {labels['social_files']} —", callback_data="menu:media:upload")],
-        [InlineKeyboardButton("----------------------------------", callback_data="none")],
+        build_section_header(actions["stt"], "stt"),
         [InlineKeyboardButton(actions["stt"], callback_data="menu:stt")],
-        [InlineKeyboardButton("----------------------------------", callback_data="none")],
         [InlineKeyboardButton(labels["refresh"], callback_data="menu:main")],
     ])
 
