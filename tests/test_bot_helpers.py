@@ -74,14 +74,17 @@ class GeminiClientTests(unittest.TestCase):
             self.assertIn(expected, converter_text)
             self.assertTrue(media_text)
 
-    def test_back_button_resets_menu_mode_to_main_without_clearing_state(self):
+    def test_back_button_resets_menu_mode_and_clears_chat_history(self):
         app = create_application(Settings(bot_token="test-token", gemini_api_key="test-key", gemini_model="gemini-2.0-flash"))
         menu_handler = next(
             handler for group in app.handlers.values() for handler in group
             if getattr(getattr(handler, "callback", None), "__name__", "") == "handle_menu_callback"
         )
 
-        context = SimpleNamespace(user_data={MENU_MODE_KEY: "media:upload"})
+        context = SimpleNamespace(
+            user_data={MENU_MODE_KEY: "chat", "selected_language": "english"},
+            chat_data={"history": [{"role": "user", "content": "private context"}]},
+        )
         update = SimpleNamespace(
             callback_query=SimpleNamespace(
                 data="menu:main",
@@ -94,7 +97,8 @@ class GeminiClientTests(unittest.TestCase):
         asyncio.run(menu_handler.callback(update, context))
 
         self.assertEqual(context.user_data[MENU_MODE_KEY], "main")
-        self.assertIn(MENU_MODE_KEY, context.user_data)
+        self.assertEqual(context.user_data["selected_language"], "english")
+        self.assertNotIn("history", context.chat_data)
 
     def test_stt_menu_is_at_main_menu_bottom_and_has_all_languages(self):
         main_rows = build_main_menu("kurdish").inline_keyboard

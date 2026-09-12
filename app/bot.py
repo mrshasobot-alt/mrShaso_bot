@@ -1012,6 +1012,9 @@ def create_application(settings: Settings) -> Application:
         labels = MENU_TEXT[_menu_language(language)]
         if data == "menu:main":
             await query.answer()
+            chat_data = getattr(context, "chat_data", None)
+            if isinstance(chat_data, dict):
+                chat_data.pop("history", None)
             context.user_data[MENU_MODE_KEY] = "main"
             try:
                 await query.edit_message_text(main_menu_text(language), reply_markup=build_main_menu(language))
