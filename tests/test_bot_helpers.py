@@ -1,7 +1,9 @@
 import asyncio
+import tempfile
 import unittest
+from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 
 from app.bot import (
     MENU_MODE_KEY,
@@ -12,6 +14,8 @@ from app.bot import (
     build_stt_language_menu,
     build_converter_menu,
     build_language_menu,
+    _prepare_transcription_audio_sync,
+    _split_telegram_text,
     build_media_menu,
     extract_media_url,
     identity_response,
@@ -25,6 +29,34 @@ from app.gemini_client import GeminiClient
 
 
 class GeminiClientTests(unittest.TestCase):
+    def test_long_transcripts_are_split_without_exceeding_telegram_limit(self):
+        transcript = "کوردی وشە " * 1300
+        chunks = _split_telegram_text(transcript)
+
+        self.assertGreater(len(chunks), 1)
+        self.assertTrue(all(len(chunk) <= 4000 for chunk in chunks))
+        self.assertEqual(" ".join(chunks), transcript.strip())
+
+    def test_transcription_audio_is_normalized_to_mono_wav(self):
+        with tempfile.TemporaryDirectory() as workdir:
+            source = Path(workdir) / "voice.ogg"
+            source.write_bytes(b"voice")
+
+            def fake_ffmpeg(command, **kwargs):
+                Path(command[-1]).write_bytes(b"wav")
+
+            with patch("app.bot.subprocess.run", side_effect=fake_ffmpeg) as run:
+                output = _prepare_transcription_audio_sync(source, workdir)
+
+            self.assertEqual(output.suffix, ".wav")
+            self.assertEqual(output.read_bytes(), b"wav")
+            command = run.call_args.args[0]
+            self.assertIn("-vn", command)
+            self.assertIn("-ac", command)
+            self.assertIn("1", command)
+            self.assertIn("-ar", command)
+            self.assertIn("16000", command)
+
     def test_download_options_are_fast_and_single_item(self):
         options = build_download_options("work")
         self.assertTrue(options["noplaylist"])

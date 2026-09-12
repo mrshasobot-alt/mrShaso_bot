@@ -37,6 +37,8 @@ SUPPORTED_CONVERSION_OPERATIONS = frozenset({
 SOCIAL_AUDIO_SUFFIXES = frozenset({".mp3", ".m4a", ".wav", ".flac"})
 SOCIAL_VOICE_SUFFIXES = frozenset({".ogg"})
 SOCIAL_VIDEO_SUFFIXES = frozenset({".mp4", ".mkv", ".webm", ".mov", ".avi"})
+TELEGRAM_TEXT_LIMIT = 4096
+STT_TEXT_LIMIT = TELEGRAM_TEXT_LIMIT - 96
 
 BOT_PROFILE_NAME = "🦋𝄟⃝ ᴠͥɪͣᴘͫ Ｓｈａ"
 START_MESSAGE_DELETE_DELAY = 30
@@ -518,6 +520,26 @@ def _convert_media_sync(source: Path, operation: str, workdir: str) -> Path:
     return output
 
 
+def _prepare_transcription_audio_sync(source: Path, workdir: str) -> Path:
+    output = Path(workdir) / "transcription.wav"
+    command = [
+        "ffmpeg", "-y", "-i", str(source),
+        "-vn", "-ac", "1", "-ar", "16000", "-c:a", "pcm_s16le",
+        str(output),
+    ]
+    try:
+        subprocess.run(command, check=True, capture_output=True, text=True)
+    except FileNotFoundError as exc:
+        raise RuntimeError("ffmpeg is required for voice transcription and must be on PATH") from exc
+    except subprocess.CalledProcessError as exc:
+        details = (exc.stderr or "").strip().splitlines()
+        reason = details[-1] if details else "unknown audio format"
+        raise RuntimeError(f"Could not decode the voice message: {reason}") from exc
+    if not output.exists() or output.stat().st_size == 0:
+        raise RuntimeError("The voice message contains no readable audio")
+    return output
+
+
 def _media_suffix(message: object) -> str:
     for attribute in ("audio", "voice", "video", "video_note", "document"):
         media = getattr(message, attribute, None)
@@ -529,6 +551,25 @@ def _media_suffix(message: object) -> str:
             mime_type = getattr(media, "mime_type", None)
             return mimetypes.guess_extension(mime_type or "") or ".bin"
     return ".bin"
+
+
+def _split_telegram_text(text: str, max_length: int = STT_TEXT_LIMIT) -> list[str]:
+    cleaned = text.strip()
+    if not cleaned:
+        return []
+
+    chunks = []
+    while len(cleaned) > max_length:
+        split_at = cleaned.rfind("\n", 0, max_length + 1)
+        if split_at < 1:
+            split_at = cleaned.rfind(" ", 0, max_length + 1)
+        if split_at < 1:
+            split_at = max_length
+        chunks.append(cleaned[:split_at].rstrip())
+        cleaned = cleaned[split_at:].lstrip()
+    if cleaned:
+        chunks.append(cleaned)
+    return chunks
 
 
 def _transcribe_voice_sync(source: Path, detected_language: str) -> str:
@@ -564,6 +605,7 @@ def _transcribe_voice_sync(source: Path, detected_language: str) -> str:
                                 "Listen to the entire audio before answering. Preserve the speaker's meaning and do not invent or omit content. "
                                 "Remove filler sounds and words such as um, uh, and ah when they do not add meaning. "
                                 "Use natural spelling, punctuation, capitalization, paragraph breaks, and a clear readable structure. "
+                                "Do not summarize or shorten the speech; the complete transcript is required. "
                                 "Do not translate into another language, mix languages, add labels, describe the audio, explain your work, "
                                 "or include any commentary before or after the transcript."
                             )
@@ -964,12 +1006,18 @@ def create_application(settings: Settings) -> Application:
                 if mode.startswith("stt"):
                     stt_language = mode.removeprefix("stt:") if mode.startswith("stt:") else context.user_data.get(SELECTED_LANGUAGE_KEY, "kurdish")
                     stt_language = stt_language_name(stt_language) if stt_language in STT_LANGUAGE_NAMES else stt_language
+                    transcription_source = await asyncio.to_thread(
+                        _prepare_transcription_audio_sync,
+                        source,
+                        workdir,
+                    )
                     transcript = await asyncio.to_thread(
                         _transcribe_voice_sync,
-                        source,
+                        transcription_source,
                         stt_language,
                     )
-                    await message.reply_text(transcript)
+                    for chunk in _split_telegram_text(transcript):
+                        await message.reply_text(chunk)
                     return
                 converted = await asyncio.to_thread(_convert_media_sync, source, mode.removeprefix("converter:"), workdir)
                 await send_media_file(message, context, converted, mode.removeprefix("converter:"))
