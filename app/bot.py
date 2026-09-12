@@ -560,7 +560,16 @@ def _transcribe_voice_sync(source: Path, detected_language: str) -> str:
                 {
                     "role": "user",
                     "parts": [
-                        {"text": f"Transcribe this speech accurately and return ONLY the transcript text in {language_hint}. Do not add explanations, labels, or extra commentary."},
+                        {
+                            "text": (
+                                f"Transcribe this speech accurately and return ONLY the cleaned transcript in {language_hint}. "
+                                "Listen to the entire audio before answering. Preserve the speaker's meaning and do not invent or omit content. "
+                                "Remove filler sounds and words such as um, uh, and ah when they do not add meaning. "
+                                "Use natural spelling, punctuation, capitalization, paragraph breaks, and a clear readable structure. "
+                                "Do not translate into another language, mix languages, add labels, describe the audio, explain your work, "
+                                "or include any commentary before or after the transcript."
+                            )
+                        },
                         {"file": uploaded},
                     ],
                 }
