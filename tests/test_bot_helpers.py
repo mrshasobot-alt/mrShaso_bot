@@ -103,14 +103,15 @@ class GeminiClientTests(unittest.TestCase):
     def test_stt_menu_is_at_main_menu_bottom_and_has_all_languages(self):
         main_rows = build_main_menu("kurdish").inline_keyboard
         main_callbacks = [button.callback_data for row in main_rows for button in row]
-        self.assertEqual(main_callbacks[-3:], ["menu:section:stt", "menu:stt", "menu:main"])
+        self.assertEqual(main_callbacks[-2:], ["menu:stt", "menu:main"])
+        self.assertEqual(main_callbacks.count("menu:stt"), 1)
 
         english_labels = {
             button.text
             for row in build_main_menu("english").inline_keyboard
             for button in row
         }
-        self.assertIn("🎙️ Speech to Text", english_labels)
+        self.assertIn("— 🎙️ Speech to Text —", english_labels)
 
         stt_callbacks = {
             button.callback_data
